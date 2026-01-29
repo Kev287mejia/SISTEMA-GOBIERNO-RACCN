@@ -67,6 +67,21 @@ export async function POST(req: Request) {
             }
         })
 
+        // Real-time notification for Cash Movement
+        try {
+            const { createNotification } = await import("@/lib/notifications")
+            const { Role: PrismaRole, NotificationType } = await import("@prisma/client")
+            await createNotification({
+                type: tipo === "EGRESO" ? NotificationType.WARNING : NotificationType.SUCCESS,
+                title: `Movimiento de Caja: ${tipo}`,
+                message: `${session.user.name} registró un ${tipo.toLowerCase()} por C$ ${monto.toLocaleString()}`,
+                link: "/caja",
+                roles: [PrismaRole.Admin, PrismaRole.ContadorGeneral, PrismaRole.ResponsableCaja]
+            })
+        } catch (notifError) {
+            console.error("Failed to send Cash notification:", notifError)
+        }
+
         // Audit Log
         await prisma.auditLog.create({
             data: {

@@ -36,6 +36,7 @@ interface UseSocketOptions {
   onCajaMovementCreated?: (data: any) => void
   onCajaCheckCreated?: (data: any) => void
   onCajaClosureSubmitted?: (data: any) => void
+  onNewNotification?: (data: any) => void
   enabled?: boolean
 }
 
@@ -55,6 +56,7 @@ export function useSocket(options: UseSocketOptions = {}) {
     onCajaMovementCreated,
     onCajaCheckCreated,
     onCajaClosureSubmitted,
+    onNewNotification,
     enabled = true,
   } = options
 
@@ -96,6 +98,11 @@ export function useSocket(options: UseSocketOptions = {}) {
       if (role === "admin") {
         socket.emit("join-room", "admin")
       }
+
+      // Join private user room for targeted notifications
+      if (session.user.id) {
+        socket.emit("join-room", session.user.id)
+      }
     })
 
     socket.on("disconnect", () => {
@@ -124,6 +131,9 @@ export function useSocket(options: UseSocketOptions = {}) {
     if (onCajaMovementCreated) socket.on(CajaEvent.MOVEMENT_CREATED, onCajaMovementCreated)
     if (onCajaCheckCreated) socket.on(CajaEvent.CHECK_CREATED, onCajaCheckCreated)
     if (onCajaClosureSubmitted) socket.on(CajaEvent.CLOSURE_SUBMITTED, onCajaClosureSubmitted)
+
+    // New real-time notification listener
+    if (onNewNotification) socket.on("new-notification", onNewNotification)
 
     // Cleanup on unmount
     return () => {
@@ -155,7 +165,8 @@ export function useSocket(options: UseSocketOptions = {}) {
     onPayrollPaid,
     onCajaMovementCreated,
     onCajaCheckCreated,
-    onCajaClosureSubmitted
+    onCajaClosureSubmitted,
+    onNewNotification
   ])
 
   return {

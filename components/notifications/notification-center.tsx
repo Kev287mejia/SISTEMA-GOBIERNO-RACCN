@@ -31,9 +31,18 @@ export function NotificationCenter() {
 
     useEffect(() => {
         fetchNotifications()
-        // Poll for new notifications every 30 seconds
-        const interval = setInterval(fetchNotifications, 30000)
-        return () => clearInterval(interval)
+
+        // Listen for real-time refresh requests
+        const handleRefresh = () => fetchNotifications()
+        window.addEventListener("refresh-notifications", handleRefresh)
+
+        // Poll for new notifications every 60 seconds (as fallback)
+        const interval = setInterval(fetchNotifications, 60000)
+
+        return () => {
+            window.removeEventListener("refresh-notifications", handleRefresh)
+            clearInterval(interval)
+        }
     }, [])
 
     const fetchNotifications = async () => {

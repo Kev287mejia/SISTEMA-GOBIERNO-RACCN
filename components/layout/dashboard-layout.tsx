@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { LogOut, User } from "lucide-react"
 import { getRoleDisplayName } from "@/lib/rbac"
 import { NotificationCenter } from "@/components/notifications/notification-center"
+import { NotificationListener } from "@/components/notifications/notification-listener"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { GlobalSearch } from "@/components/global-search"
 
@@ -36,9 +37,13 @@ export function DashboardLayout({
 
   return (
     <div className="flex h-screen bg-muted/40 dark:bg-muted/40">
+      <NotificationListener />
       <Sidebar />
-      <div className="flex flex-1 flex-col">
-        <header className="flex h-16 items-center justify-between border-b bg-background px-6">
+      <div className="flex flex-1 flex-col relative overflow-hidden">
+        {/* Glow effect for background */}
+        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-primary/5 rounded-full blur-[120px] pointer-events-none" />
+
+        <header className="flex h-16 items-center justify-between border-b bg-background/80 backdrop-blur-md px-6 sticky top-0 z-30 transition-all dark:border-white/5">
           <div className="flex items-center gap-4">
             <h2 className="text-lg font-black uppercase tracking-tight text-foreground">
               {instName}

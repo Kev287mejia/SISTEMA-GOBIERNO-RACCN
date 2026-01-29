@@ -53,10 +53,10 @@ export function Sidebar() {
   })
 
   return (
-    <div className="flex h-full w-64 flex-col border-r bg-card text-card-foreground">
-      <div className="flex h-16 items-center border-b px-6">
-        <h1 className="text-xl font-semibold tracking-tight">
-          Sistema Contable
+    <div className="flex h-full w-64 flex-col border-r bg-card dark:bg-black/40 dark:backdrop-blur-xl text-card-foreground transition-all duration-300">
+      <div className="flex h-16 items-center border-b px-6 dark:border-white/5">
+        <h1 className="text-xl font-bold tracking-tighter uppercase dark:text-primary">
+          SISTEMA <span className="text-muted-foreground font-light italic">GOB</span>
         </h1>
       </div>
       <nav className="flex-1 space-y-1 px-3 py-4">
@@ -67,14 +67,17 @@ export function Sidebar() {
               key={item.name}
               href={item.href}
               className={cn(
-                "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-semibold transition-all duration-200 group relative",
                 isActive
-                  ? "bg-primary text-primary-foreground"
-                  : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                  ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20"
+                  : "text-muted-foreground hover:bg-accent/50 hover:text-foreground"
               )}
             >
-              <item.icon className="h-5 w-5" />
+              <item.icon className={cn("h-4 w-4 transition-transform duration-200 group-hover:scale-110", isActive ? "text-white" : "text-muted-foreground")} />
               {item.name}
+              {isActive && (
+                <span className="absolute left-0 h-4 w-1 rounded-r-full bg-white ml-[-12px]" />
+              )}
             </Link>
           )
         })}

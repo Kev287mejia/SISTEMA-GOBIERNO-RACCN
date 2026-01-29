@@ -130,6 +130,21 @@ export async function POST(
             newBalance: result.pettyCashId // simplified
         })
 
+        // Real-time notification
+        try {
+            const { createNotification } = await import("@/lib/notifications")
+            const { Role: PrismaRole, NotificationType } = await import("@prisma/client")
+            await createNotification({
+                type: tipo === 'EGRESO' ? NotificationType.WARNING : NotificationType.SUCCESS,
+                title: `Movimiento de Caja Chica: ${tipo}`,
+                message: `${session.user.name} registró un ${tipo.toLowerCase()} en Caja Chica por C$ ${Number(monto).toLocaleString()}`,
+                link: `/caja-chica/${params.id}`,
+                roles: [PrismaRole.Admin, PrismaRole.ContadorGeneral, PrismaRole.ResponsableCredito]
+            })
+        } catch (notifError) {
+            console.error("Failed to send Petty Cash notification:", notifError)
+        }
+
         // Log Audit
         await prisma.auditLog.create({
             data: {

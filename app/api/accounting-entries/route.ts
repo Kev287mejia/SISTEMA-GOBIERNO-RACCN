@@ -148,6 +148,17 @@ export async function POST(request: NextRequest) {
 
     const entry = await createAccountingEntry(validatedData)
 
+    // Notify financial team about new entry
+    const { createNotification } = await import("@/lib/notifications")
+    const { Role: PrismaRole, NotificationType } = await import("@prisma/client")
+    await createNotification({
+      type: NotificationType.INFO,
+      title: "Nuevo Asiento Contable",
+      message: `${session.user.name} creó el asiento ${entry.numero}: ${entry.descripcion}`,
+      link: "/contabilidad",
+      roles: [PrismaRole.Admin, PrismaRole.ContadorGeneral, PrismaRole.DirectoraDAF]
+    })
+
     return NextResponse.json(
       { data: entry, message: "Asiento contable creado exitosamente" },
       { status: 201 }

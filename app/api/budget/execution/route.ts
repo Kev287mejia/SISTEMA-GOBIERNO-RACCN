@@ -64,20 +64,30 @@ export async function POST(request: NextRequest) {
         }
         // ----------------------------
 
-        // Create notification for the user
+        // Create notification for the user and admins
         try {
-            await prisma.notification.create({
-                data: {
-                    userId: session.user.id,
-                    type: "SUCCESS",
-                    title: "Ejecución Presupuestaria Registrada",
-                    message: `Se ejecutó ${formatCurrency(parseFloat(monto))} de la partida presupuestaria. ${body.bankAccountId ? 'Movimiento bancario registrado.' : ''}`,
-                    link: `/presupuesto?openItem=${budgetItemId}`
-                }
+            const { createNotification } = await import("@/lib/notifications")
+            const { Role: PrismaRole, NotificationType } = await import("@prisma/client")
+
+            // To the user who performed it
+            await createNotification({
+                userId: session.user.id,
+                type: NotificationType.SUCCESS,
+                title: "Ejecución Presupuestaria Registrada",
+                message: `Se ejecutó ${formatCurrency(parseFloat(monto))} de la partida presupuestaria. ${body.bankAccountId ? 'Movimiento bancario registrado.' : ''}`,
+                link: `/presupuesto?openItem=${budgetItemId}`
+            })
+
+            // To the DAF and Accountants
+            await createNotification({
+                type: NotificationType.INFO,
+                title: "Inversión/Gasto Presupuestario",
+                message: `${session.user.name} registró ejecución de C$ ${parseFloat(monto).toLocaleString()} para: ${descripcion}`,
+                link: "/presupuesto",
+                roles: [PrismaRole.Admin, PrismaRole.DirectoraDAF, PrismaRole.ContadorGeneral]
             })
         } catch (notifError) {
-            console.error("Failed to create notification:", notifError)
-            // Don't fail the request if notification fails
+            console.error("Failed to create notifications:", notifError)
         }
 
         return NextResponse.json({

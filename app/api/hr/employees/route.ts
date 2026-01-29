@@ -132,6 +132,21 @@ export async function POST(req: Request) {
       return newEmployee
     })
 
+    // Real-time notification for HR
+    try {
+      const { createNotification } = await import("@/lib/notifications")
+      const { Role: PrismaRole, NotificationType } = await import("@prisma/client")
+      await createNotification({
+        type: NotificationType.SUCCESS,
+        title: "Nuevo Empleado Registrado",
+        message: `${session.user.name} registró a ${employee.nombre} ${employee.apellido}`,
+        link: `/rrhh/employees`,
+        roles: [PrismaRole.Admin, PrismaRole.DirectoraRRHH, PrismaRole.RRHH]
+      })
+    } catch (notifError) {
+      console.error("Failed to send HR notification:", notifError)
+    }
+
     // Log action
     await prisma.auditLog.create({
       data: {
