@@ -1,0 +1,839 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                     String                  @id @default(cuid())
+  email                  String                  @unique
+  password               String
+  nombre                 String
+  apellido               String?
+  cedula                 String?
+  cargo                  String?
+  departamento           String?
+  activo                 Boolean                 @default(true)
+  deniedModules          String[]                @default([])
+  sessionVersion         Int                     @default(1)
+  role                   Role
+  failedLoginAttempts    Int                     @default(0)
+  lockedUntil            DateTime?
+  lastLoginAt            DateTime?
+  passwordChangedAt      DateTime?
+  twoFactorEnabled       Boolean                 @default(false)
+  twoFactorSecret        String?
+  twoFactorBackupCodes   String[]                @default([])
+  deletedAt              DateTime?
+  createdAt              DateTime                @default(now())
+  updatedAt              DateTime                @updatedAt
+  approvedEntries        AccountingEntry[]       @relation("EntryApprover")
+  createdEntries         AccountingEntry[]       @relation("EntryCreator")
+  accountingObservations AccountingObservation[]
+  accounts               Account[]
+  auditLogs              AuditLog[]
+  approvedBudgets        BudgetItem[]            @relation("BudgetApprover")
+  createdBudgets         BudgetItem[]            @relation("BudgetCreator")
+  hrRecords              HRRecord[]
+  inventoryItemsCreated  InventoryItem[]         @relation("InventoryCreator")
+  inventoryRecords       InventoryTransaction[]
+  payrolls               Payroll[]
+  sessions               Session[]
+  cashMovements          CashMovement[]
+  checks                 Check[]
+  cashClosures           CashClosure[]
+  pettyCashesResponsible PettyCash[]             @relation("PettyCashResponsible")
+  pettyCashMovementsCreated PettyCashMovement[]  @relation("PettyCashMovementCreator")
+  budgetExecutions       BudgetExecution[]
+  notifications          Notification[]
+  auditsRealized         PettyCashAudit[]
+
+  @@index([email])
+  @@index([role])
+  @@index([activo])
+  @@index([deletedAt])
+  @@map("users")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
+model AccountingEntry {
+  id                    String                  @id @default(cuid())
+  numero                String                  @unique
+  tipo                  EntryType
+  fecha                 DateTime
+  descripcion           String
+  monto                 Decimal                 @db.Decimal(15, 2)
+  estado                EntryStatus             @default(BORRADOR)
+  institucion           Institution
+  cuentaContable        String
+  centroCosto           String?
+  proyecto              String?
+  documentoRef          String?
+  observaciones         String?
+  creadoPorId           String
+  aprobadoPorId         String?
+  deletedAt             DateTime?
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+  aprobadoPor           User?                   @relation("EntryApprover", fields: [aprobadoPorId], references: [id])
+  creadoPor             User                    @relation("EntryCreator", fields: [creadoPorId], references: [id])
+  observations          AccountingObservation[]
+  inventoryTransactions InventoryTransaction[]
+  check                 Check?
+  pettyCashMovement      PettyCashMovement?
+
+  @@index([numero])
+  @@index([tipo])
+  @@index([fecha])
+  @@index([estado])
+  @@index([institucion])
+  @@index([cuentaContable])
+  @@index([creadoPorId])
+  @@index([deletedAt])
+
+  // Composite indexes for Dashboard & Reports Optimization
+  @@index([institucion, deletedAt, tipo]) // Fast filtering for institutional balances
+  @@index([cuentaContable, tipo, estado]) // Fast aggregation for bank/receivable stats
+  @@index([estado, deletedAt]) // Fast counting of pending items
+  @@map("accounting_entries")
+}
+
+model BudgetItem {
+  id              String       @id @default(cuid())
+  codigo          String       @unique
+  nombre          String
+  descripcion     String?
+  categoria       String
+  anio            Int
+  montoAsignado   Decimal      @db.Decimal(15, 2)
+  montoEjecutado  Decimal      @default(0) @db.Decimal(15, 2)
+  montoDisponible Decimal      @db.Decimal(15, 2)
+  estado          BudgetStatus @default(PLANIFICADO)
+  tipoGasto       BudgetType   @default(FUNCIONAMIENTO)
+  centroRegional  RegionalCenter @default(BILWI)
+  fechaInicio     DateTime?
+  fechaFin        DateTime?
+  creadoPorId     String
+  aprobadoPorId   String?
+  deletedAt       DateTime?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  aprobadoPor     User?        @relation("BudgetApprover", fields: [aprobadoPorId], references: [id])
+  creadoPor       User         @relation("BudgetCreator", fields: [creadoPorId], references: [id])
+  executions      BudgetExecution[]
+
+  @@index([codigo])
+  @@index([categoria])
+  @@index([anio])
+  @@index([estado])
+  @@index([tipoGasto])
+  @@index([centroRegional])
+  @@index([creadoPorId])
+  @@index([deletedAt])
+  @@map("budget_items")
+}
+
+model BudgetExecution {
+  id              String       @id @default(cuid())
+  budgetItemId    String
+  budgetItem      BudgetItem   @relation(fields: [budgetItemId], references: [id])
+  monto           Decimal      @db.Decimal(15, 2)
+  mes             Int
+  fecha           DateTime     @default(now())
+  descripcion     String
+  referencia      String?
+  usuarioId       String
+  usuario         User         @relation(fields: [usuarioId], references: [id])
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  @@index([budgetItemId])
+  @@index([mes])
+  @@index([usuarioId])
+  @@map("budget_executions")
+}
+
+model InventoryItem {
+  id            String                 @id @default(cuid())
+  codigo        String                 @unique
+  nombre        String
+  descripcion   String?
+  unidadMedida  String
+  categoria     String
+  stockMinimo   Decimal                @default(0) @db.Decimal(10, 2)
+  stockMaximo   Decimal?               @db.Decimal(10, 2)
+  stockActual   Decimal                @default(0) @db.Decimal(10, 2)
+  costoUnitario Decimal                @default(0) @db.Decimal(15, 2)
+  metodoKardex  String                 @default("FIFO")
+  activo        Boolean                @default(true)
+  deletedAt     DateTime?
+  createdAt     DateTime               @default(now())
+  updatedAt     DateTime               @updatedAt
+  creadoPorId   String?
+  creadoPor     User?                  @relation("InventoryCreator", fields: [creadoPorId], references: [id])
+  transacciones InventoryTransaction[]
+
+  @@index([codigo])
+  @@index([categoria])
+  @@index([activo])
+  @@index([creadoPorId])
+  @@index([deletedAt])
+  @@map("inventory_items")
+}
+
+model InventoryTransaction {
+  id                String                   @id @default(cuid())
+  tipo              InventoryTransactionType
+  cantidad          Decimal                  @db.Decimal(10, 2)
+  costoUnitario     Decimal                  @db.Decimal(15, 2)
+  costoTotal        Decimal                  @db.Decimal(15, 2)
+  fecha             DateTime                 @default(now())
+  numeroDocumento   String?
+  comprobanteUrl    String?
+  observaciones     String?
+  itemId            String
+  usuarioId         String
+  accountingEntryId String?
+  deletedAt         DateTime?
+  createdAt         DateTime                 @default(now())
+  updatedAt         DateTime                 @updatedAt
+  accountingEntry   AccountingEntry?         @relation(fields: [accountingEntryId], references: [id])
+  item              InventoryItem            @relation(fields: [itemId], references: [id])
+  usuario           User                     @relation(fields: [usuarioId], references: [id])
+
+  @@index([itemId])
+  @@index([tipo])
+  @@index([fecha])
+  @@index([usuarioId])
+  @@index([accountingEntryId])
+  @@index([deletedAt])
+  @@map("inventory_transactions")
+}
+
+model Employee {
+  id              String        @id @default(cuid())
+  codigo          String?       @unique
+  nombre          String
+  apellido        String
+  cedula          String        @unique
+  email           String?
+  telefono        String?
+  direccion       String?
+  fechaNacimiento DateTime?
+  genero          String?
+  estadoCivil     String?
+  fechaIngreso    DateTime
+  estado          String        @default("ACTIVO")
+  tipoSangre      String?
+  banco           String?
+  tipoCuenta      String?
+  numeroCuenta    String?
+  deletedAt       DateTime?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  contratos       Contract[]
+  hrRecords       HRRecord[]
+  payrollItems    PayrollItem[]
+
+  @@index([cedula])
+  @@index([estado])
+  @@index([deletedAt])
+  @@map("employees")
+}
+
+model Position {
+  id           String     @id @default(cuid())
+  titulo       String
+  descripcion  String?
+  departamento String
+  salarioMin   Decimal?   @db.Decimal(15, 2)
+  salarioMax   Decimal?   @db.Decimal(15, 2)
+  activo       Boolean    @default(true)
+  deletedAt    DateTime?
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  contratos    Contract[]
+
+  @@map("positions")
+}
+
+model Contract {
+  id            String    @id @default(cuid())
+  tipo          String
+  salarioBase   Decimal   @db.Decimal(15, 2)
+  fechaInicio   DateTime
+  fechaFin      DateTime?
+  estado        String    @default("ACTIVO")
+  documentoUrl  String?
+  observaciones String?
+  empleadoId    String
+  cargoId       String
+  deletedAt     DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  cargo         Position  @relation(fields: [cargoId], references: [id])
+  empleado      Employee  @relation(fields: [empleadoId], references: [id])
+
+  @@index([empleadoId])
+  @@index([estado])
+  @@map("contracts")
+}
+
+model HRRecord {
+  id             String       @id @default(cuid())
+  tipo           HRRecordType
+  fecha          DateTime
+  descripcion    String
+  empleadoId     String?
+  empleadoNombre String?
+  empleadoCedula String?
+  cargo          String?
+  departamento   String?
+  salario        Decimal?     @db.Decimal(15, 2)
+  fechaInicio    DateTime?
+  fechaFin       DateTime?
+  estado         String       @default("ACTIVO")
+  documentos     String?
+  observaciones  String?
+  creadoPorId    String
+  deletedAt      DateTime?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  creadoPor      User         @relation(fields: [creadoPorId], references: [id])
+  empleado       Employee?    @relation(fields: [empleadoId], references: [id])
+
+  @@index([tipo])
+  @@index([fecha])
+  @@index([empleadoId])
+  @@index([empleadoCedula])
+  @@index([estado])
+  @@index([creadoPorId])
+  @@index([deletedAt])
+  @@map("hr_records")
+}
+
+model AuditLog {
+  id              String      @id @default(cuid())
+  accion          AuditAction
+  entidad         String
+  entidadId       String
+  descripcion     String
+  datosAnteriores Json?
+  datosNuevos     Json?
+  ipAddress       String?
+  userAgent       String?
+  fecha           DateTime    @default(now())
+  usuarioId       String
+  usuario         User        @relation(fields: [usuarioId], references: [id])
+
+  @@index([accion])
+  @@index([entidad])
+  @@index([entidadId])
+  @@index([usuarioId])
+  @@index([fecha])
+  @@map("audit_logs")
+}
+
+model AccountingObservation {
+  id                String          @id @default(cuid())
+  asientoContableId String
+  observacion       String
+  tipo              String          @default("COMENTARIO")
+  estado            String          @default("PENDIENTE")
+  creadoPorId       String
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  asientoContable   AccountingEntry @relation(fields: [asientoContableId], references: [id])
+  creadoPor         User            @relation(fields: [creadoPorId], references: [id])
+
+  @@index([asientoContableId])
+  @@index([creadoPorId])
+  @@index([tipo])
+  @@index([estado])
+  @@index([createdAt])
+  @@map("accounting_observations")
+}
+
+model Payroll {
+  id          String        @id @default(cuid())
+  mes         Int
+  anio        Int
+  descripcion String
+  totalMonto  Decimal       @db.Decimal(15, 2)
+  estado      String        @default("BORRADOR")
+  fechaPago   DateTime?
+  creadoPorId String
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  items       PayrollItem[]
+  creadoPor   User          @relation(fields: [creadoPorId], references: [id])
+
+  @@index([mes, anio])
+  @@index([estado])
+  @@map("payrolls")
+}
+
+model PayrollItem {
+  id             String   @id @default(cuid())
+  nominaId       String
+  empleadoId     String
+  salarioBase    Decimal  @db.Decimal(15, 2)
+  bonificaciones Decimal  @default(0) @db.Decimal(15, 2)
+  deducciones    Decimal  @default(0) @db.Decimal(15, 2)
+  totalNeto      Decimal  @db.Decimal(15, 2)
+  detalles       String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  empleado       Employee @relation(fields: [empleadoId], references: [id])
+  nomina         Payroll  @relation(fields: [nominaId], references: [id])
+
+  @@index([nominaId])
+  @@index([empleadoId])
+  @@map("payroll_items")
+}
+
+enum Role {
+  Admin
+  ContadorGeneral
+  AuxiliarContable
+  Presupuesto
+  Bodega
+  RRHH
+  Auditor
+  CoordinadorGobierno
+  DirectoraDAF
+  DirectoraRRHH
+  ResponsableCaja
+  ResponsableCredito
+  ResponsablePresupuesto
+  ResponsableContabilidad
+}
+
+enum RegionalCenter {
+  BILWI
+  WASPAM
+  PRINZAPOLKA
+  ROSITA
+  BONANZA
+  SIUNA
+  MULUKUKU
+  PAIWAS
+  MANAGUA
+}
+
+enum BudgetType {
+  FUNCIONAMIENTO
+  INVERSION
+}
+
+model PettyCash {
+  id              String             @id @default(cuid())
+  nombre          String             @unique
+  montoInicial    Decimal            @db.Decimal(15, 2)
+  montoActual     Decimal            @db.Decimal(15, 2)
+  estado          PettyCashStatus    @default(ACTIVA)
+  usuarioId       String
+  usuario         User               @relation("PettyCashResponsible", fields: [usuarioId], references: [id])
+  institution     Institution        @default(GOBIERNO)
+  movements       PettyCashMovement[]
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+  audits          PettyCashAudit[]
+
+  @@index([usuarioId])
+  @@index([estado])
+  @@map("petty_cashes")
+}
+
+enum PettyCashStatus {
+  ACTIVA
+  CERRADA
+  EN_AUDITORIA
+}
+
+model PettyCashMovement {
+  id                String               @id @default(cuid())
+  pettyCashId       String
+  pettyCash         PettyCash            @relation(fields: [pettyCashId], references: [id])
+  tipo              PettyCashMovementType
+  monto             Decimal              @db.Decimal(15, 2)
+  fecha             DateTime             @default(now())
+  descripcion       String
+  referencia        String?
+  estado            MovementStatus       @default(PENDIENTE_VALIDACION)
+  usuarioId         String
+  usuario           User                 @relation("PettyCashMovementCreator", fields: [usuarioId], references: [id])
+  accountingEntryId String?              @unique
+  accountingEntry   AccountingEntry?     @relation(fields: [accountingEntryId], references: [id])
+  inconsistente     Boolean              @default(false)
+  observaciones     String?
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
+
+  @@index([pettyCashId])
+  @@index([usuarioId])
+  @@index([tipo])
+  @@index([estado])
+  @@map("petty_cash_movements")
+}
+
+enum PettyCashMovementType {
+  INGRESO   // Reposición de caja
+  EGRESO    // Gasto
+  AJUSTE    // Diferencia/Corrección
+}
+
+enum MovementStatus {
+  PENDIENTE_VALIDACION
+  VALIDADO
+  RECHAZADO
+  ANULADO
+}
+
+enum EntityType {
+  PROVEEDOR
+  CLIENTE
+  INSTITUCION
+}
+
+model Entity {
+  id        String   @id @default(cuid())
+  nombre    String
+  ruc       String?  @unique
+  email     String?
+  telefono  String?
+  direccion String?
+  contacto  String?
+  tipo      EntityType @default(PROVEEDOR)
+  activo    Boolean    @default(true)
+  checks    Check[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("entities")
+}
+
+model CashMovement {
+  id              String           @id @default(cuid())
+  tipo            CashMovementType
+  monto           Decimal          @db.Decimal(15, 2)
+  fecha           DateTime         @default(now())
+  descripcion     String
+  referencia      String?
+  institucion     Institution      @default(GOBIERNO)
+  usuarioId       String
+  usuario         User             @relation(fields: [usuarioId], references: [id])
+  closureId       String?
+  closure         CashClosure?     @relation(fields: [closureId], references: [id])
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  @@index([usuarioId])
+  @@index([closureId])
+  @@index([tipo])
+  @@index([fecha])
+  @@map("cash_movements")
+}
+
+enum CashMovementType {
+  INGRESO
+  EGRESO
+}
+
+model Check {
+  id                String          @id @default(cuid())
+  numero            String          @unique
+  tipo              CheckType
+  banco             String
+  cuentaBancaria    String
+  beneficiario      String?         // GRACCNN or Provider Name
+  monto             Decimal         @db.Decimal(15, 2)
+  fecha             DateTime
+  referencia        String?
+  estado            CheckStatus     @default(PENDIENTE_VALIDACION)
+  conciliado        Boolean         @default(false)
+  fechaConciliacion DateTime?
+  usuarioId         String
+  usuario           User            @relation(fields: [usuarioId], references: [id])
+  entityId          String?
+  entity            Entity?         @relation(fields: [entityId], references: [id])
+  accountingEntryId String?         @unique
+  accountingEntry   AccountingEntry? @relation(fields: [accountingEntryId], references: [id])
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  @@index([usuarioId])
+  @@index([entityId])
+  @@index([numero])
+  @@index([tipo])
+  @@index([estado])
+  @@map("checks")
+}
+
+enum CheckType {
+  RECIBIDO
+  EMITIDO
+}
+
+enum CheckStatus {
+  PENDIENTE_VALIDACION
+  VALIDADO
+  ANULADO
+}
+
+model CashClosure {
+  id              String         @id @default(cuid())
+  fechaInicio     DateTime
+  fechaFin        DateTime
+  montoInicial    Decimal        @db.Decimal(15, 2)
+  totalIngresos   Decimal        @db.Decimal(15, 2)
+  totalEgresos    Decimal        @db.Decimal(15, 2)
+  montoFinal      Decimal        @db.Decimal(15, 2)
+  estado          ClosureStatus  @default(ABIERTO)
+  usuarioId       String
+  usuario         User           @relation(fields: [usuarioId], references: [id])
+  movements       CashMovement[]
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  @@index([usuarioId])
+  @@index([estado])
+  @@map("cash_closures")
+}
+
+enum ClosureStatus {
+  ABIERTO
+  CERRADO
+}
+
+enum EntryType {
+  INGRESO
+  EGRESO
+}
+
+enum EntryStatus {
+  BORRADOR
+  PENDIENTE
+  APROBADO
+  RECHAZADO
+  ANULADO
+}
+
+enum BudgetStatus {
+  PLANIFICADO
+  APROBADO
+  EN_EJECUCION
+  CERRADO
+}
+
+enum InventoryTransactionType {
+  ENTRADA
+  SALIDA
+  AJUSTE
+  DEVOLUCION
+}
+
+enum HRRecordType {
+  CONTRATACION
+  ASCENSO
+  TRASLADO
+  DESPIDO
+  RENUNCIA
+  VACACIONES
+  LICENCIA
+  EVALUACION
+}
+
+enum AuditAction {
+  CREATE
+  UPDATE
+  DELETE
+  LOGIN
+  LOGOUT
+  EXPORT
+  APPROVE
+  REJECT
+  BANK_ACCOUNT_PRE_REGISTERED
+  ARQUEO_CAJA_CHICA
+}
+
+model PettyCashAudit {
+  id              String    @id @default(cuid())
+  pettyCashId     String
+  pettyCash       PettyCash @relation(fields: [pettyCashId], references: [id])
+  expectedBalance Decimal   @db.Decimal(15, 2)
+  countedBalance  Decimal   @db.Decimal(15, 2)
+  difference      Decimal   @db.Decimal(15, 2)
+  observations    String?
+  auditorId       String
+  auditor         User      @relation(fields: [auditorId], references: [id])
+  createdAt       DateTime  @default(now())
+
+  @@index([pettyCashId])
+  @@index([auditorId])
+  @@map("petty_cash_audits")
+}
+
+enum Institution {
+  GOBIERNO
+  CONCEJO
+}
+
+model SystemSetting {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  value       String
+  label       String
+  group       String   // Institucion, Contabilidad, RRHH, General
+  type        String   // string, number, boolean, json
+  description String?
+  updatedAt   DateTime @updatedAt
+
+  @@index([key])
+  @@map("system_settings")
+}
+
+model BankAccount {
+  id              String            @id @default(uuid())
+  bankName        String
+  accountNumber   String            @unique
+  accountName     String?
+  accountType     String
+  currency        String
+  openingBalance  Decimal           @db.Decimal(15, 2)
+  region          String?
+  costCenter      String?
+  status          String            @default("PENDING_VALIDATION")
+  isActive        Boolean           @default(false)
+  
+  // New Field for Alert
+  minBalance      Decimal           @default(0) @db.Decimal(15, 2)
+  currentBalance  Decimal           @default(0) @db.Decimal(15, 2) // Cache field, optional but good
+
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  
+  transactions    BankTransaction[]
+
+  @@map("bank_accounts")
+}
+
+model BankTransaction {
+  id              String          @id @default(uuid())
+  type            TransactionType
+  amount          Decimal         @db.Decimal(15, 2)
+  description     String
+  reference       String?         // Boleta de deposito, etc
+  date            DateTime        @default(now())
+  
+  // Reconciliation
+  reconciled      Boolean         @default(false)
+  reconciledDate  DateTime?
+
+  bankAccountId   String
+  bankAccount     BankAccount     @relation(fields: [bankAccountId], references: [id])
+  
+  createdAt       DateTime        @default(now())
+  createdBy       String
+
+  @@index([bankAccountId])
+  @@index([type])
+  @@index([date])
+  @@map("bank_transactions")
+}
+
+enum TransactionType {
+  DEPOSIT        // Ingreso
+  WITHDRAWAL     // Retiro (Rare if not check)
+  DEBIT_NOTE     // Cargo Banco (Egreso)
+  CREDIT_NOTE    // Abono Banco (Ingreso)
+  TRANSFER_IN
+  TRANSFER_OUT
+}
+
+enum BankAccountStatus {
+  PENDING_VALIDATION
+  ACTIVE
+  INACTIVE
+  BLOCKED
+}
+
+enum NotificationType {
+  INFO
+  SUCCESS
+  WARNING
+  ERROR
+  BUDGET_ALERT
+  BANK_ALERT
+  APPROVAL_REQUIRED
+  SYSTEM
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      NotificationType @default(INFO)
+  title     String
+  message   String
+  link      String?
+  read      Boolean          @default(false)
+  readAt    DateTime?
+  createdAt DateTime         @default(now())
+  
+  @@index([userId, read])
+  @@index([createdAt])
+  @@map("notifications")
+}
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  email     String
+  token     String   @unique
+  expires   DateTime
+  createdAt DateTime @default(now())
+
+  @@unique([email, token])
+  @@index([token])
+  @@map("password_reset_tokens")
+}

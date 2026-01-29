@@ -1,0 +1,1 @@
+const { PrismaClient } = require('@prisma/client'); const prisma = new PrismaClient(); async function main() { const count = await prisma.pettyCash.count(); console.log('Total Cajas:', count); const boxes = await prisma.pettyCash.findMany(); console.log(JSON.stringify(boxes, null, 2)); } main();

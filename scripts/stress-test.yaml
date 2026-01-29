@@ -1,0 +1,51 @@
+config:
+  target: "http://localhost:3000"
+  phases:
+    - duration: 60
+      arrivalRate: 5
+      rampTo: 20
+      name: "Warm up and Ramp up"
+    - duration: 60
+      arrivalRate: 20
+      name: "Sustained high load"
+  plugins:
+    ensure: {}
+    expect: {}
+  ensure:
+    p95: 500
+    maxErrorRate: 2
+  defaults:
+    headers:
+      Content-Type: "application/json"
+
+scenarios:
+  - name: "Public endpoint health check"
+    flow:
+      - get:
+          url: "/"
+      - think: 1
+      - get:
+          url: "/api/caja/movements"
+          expect: 
+            - statusCode: 401
+
+  - name: "Accounting Data Read"
+    flow:
+      - get:
+          url: "/api/accounting/dashboard-stats"
+          capture:
+            - json: "$.pendingValidation"
+              as: "pending"
+          expect:
+            - statusCode: 200
+
+  - name: "Caja Movement Validation"
+    flow:
+      - post:
+          url: "/api/caja/movements"
+          json:
+            tipo: "INGRESO"
+            monto: "100"
+            descripcion: "Stress Test Movement"
+          expect:
+            - statusCode: 401 # Unauthorized expected here without auth headers, testing robustness

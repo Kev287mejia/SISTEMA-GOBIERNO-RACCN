@@ -1,0 +1,634 @@
+"use client"
+
+import { useEffect, useState, Suspense } from "react"
+import { useSearchParams, useRouter, usePathname } from "next/navigation"
+import { DashboardLayout } from "@/components/layout/dashboard-layout"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
+import {
+  Plus,
+  TrendingUp,
+  DollarSign,
+  AlertCircle,
+  Search,
+  Filter,
+  BarChart3,
+  ArrowUpRight,
+  Target,
+  FileBarChart,
+  Eye,
+  MapPin,
+  Loader2
+} from "lucide-react"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog"
+import { formatCurrency } from "@/lib/utils"
+import { Input } from "@/components/ui/input"
+import { BudgetItemDetailDialog } from "@/components/budget/budget-item-detail-dialog"
+import { BudgetExecutionForm } from "@/components/budget/budget-execution-form"
+import { BudgetReportDialog } from "@/components/budget/budget-report-dialog"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+
+type BudgetItem = {
+  id: string
+  codigo: string
+  nombre: string
+  categoria: string
+  anio: number
+  montoAsignado: number
+  montoEjecutado: number
+  montoDisponible: number
+  estado: string
+  tipoGasto: string
+  centroRegional: string
+  descripcion?: string
+  creadoPor?: {
+    nombre: string
+    apellido: string
+  }
+}
+
+function SearchResultsHandler({ budgetItems, onOpen }: { budgetItems: BudgetItem[], onOpen: (item: BudgetItem) => void }) {
+  const searchParams = useSearchParams()
+  const router = useRouter()
+  const pathname = usePathname()
+
+  useEffect(() => {
+    const id = searchParams.get('openItem')
+    if (id && budgetItems.length > 0) {
+      const item = budgetItems.find(x => x.id === id)
+      if (item) {
+        onOpen(item)
+        // Clean URL to prevent reopening
+        router.replace(pathname, { scroll: false })
+      }
+    }
+  }, [searchParams, budgetItems, onOpen, router, pathname])
+  return null
+}
+
+export default function PresupuestoPage() {
+  const [budgetItems, setBudgetItems] = useState<BudgetItem[]>([])
+  const [loading, setLoading] = useState(true)
+  const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const [search, setSearch] = useState("")
+  const [selectedItem, setSelectedItem] = useState<BudgetItem | null>(null)
+  const [isDetailOpen, setIsDetailOpen] = useState(false)
+  const [isExecutionOpen, setIsExecutionOpen] = useState(false)
+  const [isReportOpen, setIsReportOpen] = useState(false)
+
+  // Filters
+  const [regionFilter, setRegionFilter] = useState("all")
+  const [typeFilter, setTypeFilter] = useState("all")
+
+  const [newItem, setNewItem] = useState({
+    codigo: "",
+    nombre: "",
+    categoria: "",
+    anio: new Date().getFullYear(),
+    montoAsignado: "",
+    tipoGasto: "FUNCIONAMIENTO",
+    centroRegional: "BILWI",
+    descripcion: ""
+  })
+
+
+  const fetchBudgetItems = async () => {
+    console.log("[PRESUPUESTO] fetchBudgetItems called")
+    console.log("[PRESUPUESTO] Filters:", { regionFilter, typeFilter })
+    setLoading(true)
+    try {
+      const query = new URLSearchParams({
+        centroRegional: regionFilter,
+        tipoGasto: typeFilter
+      }).toString()
+      console.log("[PRESUPUESTO] Query string:", query)
+
+      const url = `/api/budget/items?${query}`
+      console.log("[PRESUPUESTO] Fetching from:", url)
+
+      const res = await fetch(url)
+      console.log("[PRESUPUESTO] Response status:", res.status)
+
+      if (res.status === 401) {
+        console.error("[PRESUPUESTO] Unauthorized - Session expired")
+        setBudgetItems([])
+        return
+      }
+
+      if (res.ok) {
+        const data = await res.json()
+        console.log("[PRESUPUESTO] Response data:", data)
+        console.log("[PRESUPUESTO] Items count:", data.data?.length || 0)
+
+        if (Array.isArray(data.data)) {
+          setBudgetItems(data.data)
+          console.log("[PRESUPUESTO] Set", data.data.length, "items to state")
+        } else {
+          console.error("[PRESUPUESTO] data.data is not an array:", data.data)
+          setBudgetItems([])
+        }
+      } else {
+        console.error("[PRESUPUESTO] Failed to fetch:", res.statusText)
+        setBudgetItems([])
+      }
+    } catch (error) {
+      console.error("[PRESUPUESTO] Error fetching:", error)
+      setBudgetItems([])
+    } finally {
+      setLoading(false)
+      console.log("[PRESUPUESTO] Fetch complete")
+    }
+  }
+
+  // Initial load on mount
+  useEffect(() => {
+    console.log("[PRESUPUESTO] Component mounted, initial fetch")
+    fetchBudgetItems()
+  }, [])
+
+  // Reload when filters change
+  useEffect(() => {
+    console.log("[PRESUPUESTO] Filters changed, refetching")
+    fetchBudgetItems()
+  }, [regionFilter, typeFilter])
+
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    try {
+      const res = await fetch("/api/budget/items", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...newItem,
+          montoAsignado: parseFloat(newItem.montoAsignado),
+          categoria: newItem.categoria || "GENERAL"
+        })
+      })
+
+      if (res.ok) {
+        setIsDialogOpen(false)
+        fetchBudgetItems()
+        setNewItem({
+          codigo: "",
+          nombre: "",
+          categoria: "",
+          anio: new Date().getFullYear(),
+          montoAsignado: "",
+          tipoGasto: "FUNCIONAMIENTO",
+          centroRegional: "BILWI",
+          descripcion: ""
+        })
+      }
+    } catch (error) {
+      console.error("Error creating budget item:", error)
+    }
+  }
+
+  const filteredItems = budgetItems.filter(item => {
+    const matchesSearch = item.codigo.toLowerCase().includes(search.toLowerCase()) ||
+      item.nombre.toLowerCase().includes(search.toLowerCase())
+    return matchesSearch
+  })
+
+  const totalAsignado = budgetItems.reduce((sum, item) => sum + Number(item.montoAsignado), 0)
+  const totalEjecutado = budgetItems.reduce((sum, item) => sum + Number(item.montoEjecutado), 0)
+  const totalDisponible = budgetItems.reduce((sum, item) => sum + Number(item.montoDisponible), 0)
+
+  const itemsCriticos = budgetItems.filter(item => {
+    const porcentaje = (Number(item.montoEjecutado) / Number(item.montoAsignado)) * 100
+    return porcentaje >= 95 && Number(item.montoAsignado) > 0
+  })
+
+  const handleOpenDetail = (item: BudgetItem) => {
+    setSelectedItem(item)
+    setIsDetailOpen(true)
+  }
+
+  return (
+    <DashboardLayout>
+      <div className="space-y-10 max-w-full px-6 pb-20 animate-in fade-in slide-in-from-bottom-4 duration-700">
+
+        {/* Premium Header with Glassmorphism */}
+        <div className="relative overflow-hidden bg-gradient-to-br from-slate-900 via-emerald-900 to-slate-900 p-10 rounded-[2.5rem] shadow-2xl shadow-emerald-900/20 border border-emerald-500/10">
+          <div className="absolute top-0 right-0 p-10 opacity-10 pointer-events-none">
+            <TrendingUp className="h-64 w-64 text-white rotate-12" />
+          </div>
+
+          <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-8">
+            <div className="space-y-4">
+              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 backdrop-blur-sm">
+                <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                <span className="text-[10px] font-black uppercase tracking-widest text-emerald-400">Sistema Certificado 2026</span>
+              </div>
+              <h1 className="text-5xl font-black tracking-tighter text-white leading-tight">
+                Control <span className="text-emerald-400">Presupuestario</span>
+              </h1>
+              <p className="text-emerald-100/60 font-medium max-w-xl text-lg">
+                Visualización en tiempo real de la ejecución fiscal regional del GRACCNN. Gestión a cargo de <span className="text-white font-bold underline underline-offset-4 decoration-emerald-500">Lic. Yahira Tucker Medina</span>.
+              </p>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-4">
+              <Button
+                variant="outline"
+                className="h-14 px-8 rounded-2xl bg-white/5 border-white/10 text-white hover:bg-white/10 hover:border-white/20 backdrop-blur-md transition-all duration-300 font-bold uppercase tracking-widest text-[10px] gap-3"
+                onClick={() => setIsReportOpen(true)}
+              >
+                <FileBarChart className="h-5 w-5 text-emerald-400" /> Generar Documentación Oficial
+              </Button>
+
+              <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button className="h-14 px-8 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black uppercase tracking-widest text-[10px] gap-3 shadow-xl shadow-emerald-500/25 transition-all duration-300 hover:scale-[1.02] active:scale-95">
+                    <Plus className="h-5 w-5" /> Nueva Partida SNIP
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-[600px] border-none shadow-2xl rounded-[2rem] overflow-hidden p-0">
+                  <div className="bg-slate-900 p-8 text-white relative">
+                    <div className="absolute top-0 right-0 p-8 opacity-5">
+                      <Plus className="h-40 w-40" />
+                    </div>
+                    <DialogHeader>
+                      <DialogTitle className="text-3xl font-black tracking-tight">Registro de Partida</DialogTitle>
+                      <CardDescription className="text-slate-400 font-medium italic mt-2">Instrumento de planificación para asignación de recursos públicos.</CardDescription>
+                    </DialogHeader>
+                  </div>
+
+                  <form onSubmit={handleSubmit} className="p-8 bg-white space-y-6">
+                    <div className="grid grid-cols-2 gap-6">
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 px-1">Código Identificador</label>
+                        <Input
+                          required
+                          className="h-14 px-5 rounded-2xl border-slate-100 bg-slate-50 focus-visible:ring-emerald-500 font-bold transition-all"
+                          value={newItem.codigo}
+                          onChange={(e) => setNewItem({ ...newItem, codigo: e.target.value })}
+                          placeholder="Ej: 5.1.04"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 px-1">Techo Presupuestario (C$)</label>
+                        <Input
+                          required
+                          type="number"
+                          step="0.01"
+                          className="h-14 px-5 rounded-2xl border-slate-100 bg-slate-50 focus-visible:ring-emerald-500 font-bold transition-all"
+                          value={newItem.montoAsignado}
+                          onChange={(e) => setNewItem({ ...newItem, montoAsignado: e.target.value })}
+                          placeholder="0.00"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 px-1">Nombre de la Partida / Proyecto</label>
+                      <Input
+                        required
+                        className="h-14 px-5 rounded-2xl border-slate-100 bg-slate-50 focus-visible:ring-emerald-500 font-bold transition-all"
+                        value={newItem.nombre}
+                        onChange={(e) => setNewItem({ ...newItem, nombre: e.target.value })}
+                        placeholder="Descripción corta del destino del fondo..."
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-6">
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 px-1">Naturaleza del Gasto</label>
+                        <Select
+                          value={newItem.tipoGasto}
+                          onValueChange={(v) => setNewItem({ ...newItem, tipoGasto: v })}
+                        >
+                          <SelectTrigger className="h-14 px-5 rounded-2xl border-slate-100 bg-slate-50 font-bold">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent className="rounded-2xl border-none shadow-2xl">
+                            <SelectItem value="FUNCIONAMIENTO">Gasto Operativo (Funcionamiento)</SelectItem>
+                            <SelectItem value="INVERSION">Inversión Pública (PIP)</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 px-1">Destino Regional</label>
+                        <Select
+                          value={newItem.centroRegional}
+                          onValueChange={(v) => setNewItem({ ...newItem, centroRegional: v })}
+                        >
+                          <SelectTrigger className="h-14 px-5 rounded-2xl border-slate-100 bg-slate-50 font-bold">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent className="rounded-2xl border-none shadow-2xl">
+                            <SelectItem value="BILWI">Bilwi</SelectItem>
+                            <SelectItem value="WASPAM">Waspam</SelectItem>
+                            <SelectItem value="PRINZAPOLKA">Prinzapolka</SelectItem>
+                            <SelectItem value="ROSITA">Rosita</SelectItem>
+                            <SelectItem value="BONANZA">Bonanza</SelectItem>
+                            <SelectItem value="SIUNA">Siuna</SelectItem>
+                            <SelectItem value="MULUKUKU">Mulukukú</SelectItem>
+                            <SelectItem value="PAIWAS">Paiwas</SelectItem>
+                            <SelectItem value="MANAGUA">Managua</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 px-1">Justificación Institucional</label>
+                      <textarea
+                        className="flex min-h-[100px] w-full rounded-2xl border border-slate-100 bg-slate-50 px-5 py-4 text-sm font-medium focus-visible:ring-2 focus-visible:ring-emerald-500 outline-none transition-all resize-none"
+                        value={newItem.descripcion}
+                        onChange={(e) => setNewItem({ ...newItem, descripcion: e.target.value })}
+                        placeholder="Explique el impacto de esta asignación..."
+                      />
+                    </div>
+
+                    <DialogFooter className="pt-4">
+                      <Button type="submit" className="w-full h-14 bg-slate-900 hover:bg-slate-800 rounded-2xl font-black uppercase tracking-widest text-[10px] shadow-xl shadow-slate-200">
+                        Formalizar Apertura de Partida
+                      </Button>
+                    </DialogFooter>
+                  </form>
+                </DialogContent>
+              </Dialog>
+            </div>
+          </div>
+        </div>
+
+        {/* Critical Alerts */}
+        {itemsCriticos.length > 0 && (
+          <div className="bg-gradient-to-r from-red-50 to-orange-50 border border-red-200 rounded-[2rem] p-6 flex flex-col md:flex-row items-center gap-6 shadow-lg shadow-red-100">
+            <div className="h-16 w-16 bg-gradient-to-br from-red-600 to-red-500 rounded-2xl flex items-center justify-center text-white shadow-xl shadow-red-200 flex-shrink-0 rotate-3 animate-pulse">
+              <AlertCircle className="h-8 w-8" />
+            </div>
+            <div className="flex-1 space-y-1">
+              <div className="flex items-center gap-3">
+                <h3 className="text-lg font-black text-red-900 uppercase tracking-tight">Alertas de Disponibilidad</h3>
+                <span className="px-3 py-1 rounded-full bg-red-600 text-white text-[9px] font-black tracking-widest uppercase shadow-lg">Crítico</span>
+              </div>
+              <p className="text-sm text-red-700/80 font-medium">
+                Se han detectado <span className="font-black underline underline-offset-2">{itemsCriticos.length} partidas</span> con nivel de ejecución superior al 95%. Proceder con cautela antes de registrar nuevos egresos.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* Premium Stats Cards */}
+        <div className="grid gap-8 md:grid-cols-3">
+          <div className="group relative bg-white p-8 rounded-[2.5rem] shadow-xl shadow-slate-200/50 border border-slate-100 transition-all duration-300 hover:shadow-2xl hover:-translate-y-1 overflow-hidden">
+            <div className="absolute top-0 right-0 p-8 opacity-[0.03] group-hover:opacity-[0.05] transition-opacity">
+              <DollarSign className="h-32 w-32" />
+            </div>
+            <div className="relative z-10 space-y-1">
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Techo Asignado {new Date().getFullYear()}</p>
+              <h2 className="text-4xl font-black text-slate-900 tracking-tighter">{formatCurrency(totalAsignado)}</h2>
+              <div className="pt-4 inline-flex items-center gap-2 group-hover:translate-x-1 transition-transform">
+                <span className="text-[10px] font-black uppercase text-emerald-600">Presupuesto Maestro</span>
+                <ArrowUpRight className="h-3 w-3 text-emerald-600" />
+              </div>
+            </div>
+            <div className="mt-8 h-1.5 w-full bg-slate-50 rounded-full overflow-hidden">
+              <div className="h-full bg-gradient-to-r from-emerald-500 to-emerald-400 rounded-full w-full shadow-lg" />
+            </div>
+          </div>
+
+          <div className="group relative bg-white p-8 rounded-[2.5rem] shadow-xl shadow-slate-200/50 border border-slate-100 transition-all duration-300 hover:shadow-2xl hover:-translate-y-1 overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-br from-blue-50/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+            <div className="relative z-10 space-y-1">
+              <div className="flex justify-between items-center">
+                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Gasto Ejecutado</p>
+                <span className="px-3 py-1 rounded-lg bg-gradient-to-r from-blue-600 to-blue-500 text-white text-[10px] font-black shadow-lg">{totalAsignado > 0 ? ((totalEjecutado / totalAsignado) * 100).toFixed(1) : 0}%</span>
+              </div>
+              <h2 className="text-4xl font-black text-slate-900 tracking-tighter">{formatCurrency(totalEjecutado)}</h2>
+              <div className="pt-4 inline-flex items-center gap-2 group-hover:translate-x-1 transition-transform">
+                <span className="text-[10px] font-black uppercase text-blue-600">Consolidado Real</span>
+                <ArrowUpRight className="h-3 w-3 text-blue-600" />
+              </div>
+            </div>
+            <div className="mt-8 h-3 w-full bg-slate-100 rounded-full overflow-hidden shadow-inner">
+              <div
+                className="h-full bg-gradient-to-r from-blue-600 to-blue-500 rounded-full transition-all duration-[1.5s] ease-out shadow-lg"
+                style={{ width: `${(totalEjecutado / totalAsignado) * 100}%` }}
+              />
+            </div>
+          </div>
+
+          <div className="group relative bg-gradient-to-br from-slate-900 to-slate-800 p-8 rounded-[2.5rem] shadow-xl shadow-slate-900/20 border border-slate-700 transition-all duration-300 hover:shadow-2xl hover:-translate-y-1 overflow-hidden">
+            <div className="absolute -bottom-10 -right-10 p-8 opacity-[0.05] group-hover:scale-125 transition-transform">
+              <DollarSign className="h-48 w-48 text-white" />
+            </div>
+            <div className="relative z-10 space-y-1">
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Saldo Disponible</p>
+              <h2 className="text-4xl font-black text-white tracking-tighter">{formatCurrency(totalDisponible)}</h2>
+              <div className="pt-4 inline-flex items-center gap-2 group-hover:translate-x-1 transition-transform">
+                <span className="text-[10px] font-black uppercase text-emerald-400">Liquidez Fiscal</span>
+                <ArrowUpRight className="h-3 w-3 text-emerald-400" />
+              </div>
+            </div>
+            <div className="mt-8 flex justify-between gap-1 h-3 group-hover:gap-1.5 transition-all">
+              {[...Array(20)].map((_, i) => (
+                <div key={i} className={`h-full flex-1 rounded-sm transition-all ${i < (totalDisponible / totalAsignado * 20) ? 'bg-emerald-500 shadow-sm' : 'bg-slate-700'}`} />
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Master List Section */}
+        <div className="bg-white rounded-[3rem] shadow-2xl shadow-slate-200/50 border border-slate-100 overflow-hidden transition-all duration-500">
+          <div className="p-10 border-b border-slate-50 bg-gradient-to-br from-slate-50/50 to-transparent flex flex-col md:flex-row md:items-center justify-between gap-8">
+            <div className="space-y-1">
+              <h2 className="text-2xl font-black text-slate-900 uppercase">Partidas Registradas</h2>
+              <p className="text-sm font-medium text-slate-500">Visualización detallada de la distribución financiera regional.</p>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-4 bg-white p-3 rounded-3xl shadow-lg border border-slate-100">
+              <div className="relative">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                <Input
+                  placeholder="Filtrar por código o nombre..."
+                  className="pl-11 h-12 w-[300px] border-none bg-slate-50 rounded-2xl text-sm font-medium focus-visible:ring-emerald-500"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                />
+              </div>
+
+              <div className="h-8 w-[1px] bg-slate-200 hidden md:block" />
+
+              <Select value={regionFilter} onValueChange={setRegionFilter}>
+                <SelectTrigger className="h-12 w-[160px] bg-slate-50 border-none rounded-2xl text-xs font-black uppercase tracking-widest text-slate-600">
+                  <SelectValue placeholder="Centro Reg." />
+                </SelectTrigger>
+                <SelectContent className="rounded-2xl border-none shadow-2xl">
+                  <SelectItem value="all">Todo Centro</SelectItem>
+                  <SelectItem value="BILWI">Bilwi</SelectItem>
+                  <SelectItem value="WASPAM">Waspam</SelectItem>
+                  <SelectItem value="ROSITA">Rosita</SelectItem>
+                  <SelectItem value="SIUNA">Siuna</SelectItem>
+                  <SelectItem value="BONANZA">Bonanza</SelectItem>
+                </SelectContent>
+              </Select>
+
+              <Select value={typeFilter} onValueChange={setTypeFilter}>
+                <SelectTrigger className="h-12 w-[160px] bg-slate-50 border-none rounded-2xl text-xs font-black uppercase tracking-widest text-slate-600">
+                  <SelectValue placeholder="Naturaleza" />
+                </SelectTrigger>
+                <SelectContent className="rounded-2xl border-none shadow-2xl">
+                  <SelectItem value="all">Todo Tipo</SelectItem>
+                  <SelectItem value="FUNCIONAMIENTO">Funcionamiento</SelectItem>
+                  <SelectItem value="INVERSION">Inversión PIP</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="p-0">
+            {loading ? (
+              <div className="flex flex-col items-center justify-center py-32 gap-6 bg-gradient-to-br from-slate-50/20 to-transparent">
+                <div className="relative">
+                  <div className="absolute inset-0 bg-emerald-500/20 blur-3xl rounded-full animate-pulse" />
+                  <Loader2 className="h-16 w-16 animate-spin text-emerald-600 relative z-10" />
+                </div>
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em] animate-pulse">Consultando Registro Fiscal...</p>
+              </div>
+            ) : filteredItems.length === 0 ? (
+              <div className="text-center py-32 bg-gradient-to-br from-slate-50/10 to-transparent">
+                <div className="h-24 w-24 bg-gradient-to-br from-slate-100 to-slate-50 rounded-[2rem] flex items-center justify-center mx-auto mb-6 shadow-lg">
+                  <Search className="h-10 w-10 text-slate-300" />
+                </div>
+                <h3 className="text-xl font-black text-slate-800 uppercase tracking-tight">Sin correspondencias</h3>
+                <p className="text-sm text-slate-400 max-w-xs mx-auto mt-2 font-medium">Ajuste los filtros de búsqueda para visualizar los datos de ejecución.</p>
+              </div>
+            ) : (
+              <div className="relative w-full overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="bg-gradient-to-r from-slate-50/50 to-transparent border-b border-slate-100">
+                      <th className="h-12 px-4 text-left align-middle font-black text-[9px] uppercase tracking-widest text-slate-400">Código</th>
+                      <th className="h-12 px-4 text-left align-middle font-black text-[9px] uppercase tracking-widest text-slate-400">Partida</th>
+                      <th className="h-12 px-3 text-right align-middle font-black text-[9px] uppercase tracking-widest text-slate-400">Asignado</th>
+                      <th className="h-12 px-3 text-right align-middle font-black text-[9px] uppercase tracking-widest text-slate-400">Ejecutado</th>
+                      <th className="h-12 px-3 text-right align-middle font-black text-[9px] uppercase tracking-widest text-slate-400">Disponible</th>
+                      <th className="h-12 px-3 text-center align-middle font-black text-[9px] uppercase tracking-widest text-slate-400">%</th>
+                      <th className="h-12 px-3 text-right align-middle font-black text-[9px] uppercase tracking-widest text-slate-400">Acción</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-50">
+                    {filteredItems.map((item) => {
+                      const porcentaje = (Number(item.montoEjecutado) / Number(item.montoAsignado)) * 100
+                      return (
+                        <tr key={item.id} className="group hover:bg-gradient-to-r hover:from-slate-50/50 hover:to-transparent transition-all duration-300">
+                          <td className="px-4 py-4">
+                            <div className="flex flex-col gap-0.5">
+                              <span className="font-mono text-[10px] font-black text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded w-fit">{item.codigo}</span>
+                              <span className="text-[8px] text-slate-500 font-bold uppercase flex items-center gap-1">
+                                <MapPin className="h-2.5 w-2.5 text-emerald-500" /> {item.centroRegional}
+                              </span>
+                            </div>
+                          </td>
+                          <td className="px-4 py-4 max-w-[200px]">
+                            <div className="flex flex-col gap-0.5">
+                              <span className="font-bold text-slate-800 text-xs group-hover:text-emerald-700 transition-colors uppercase truncate">{item.nombre}</span>
+                              <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">{item.tipoGasto}</span>
+                            </div>
+                          </td>
+                          <td className="px-3 py-4 text-right font-black text-slate-900 tabular-nums text-xs">{formatCurrency(item.montoAsignado)}</td>
+                          <td className="px-3 py-4 text-right font-black text-blue-600 tabular-nums text-xs">{formatCurrency(item.montoEjecutado)}</td>
+                          <td className="px-3 py-4 text-right tabular-nums">
+                            <span className={`font-black px-2 py-1 rounded-lg shadow-sm text-xs ${item.montoDisponible >= 0 ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'}`}>
+                              {formatCurrency(item.montoDisponible)}
+                            </span>
+                          </td>
+                          <td className="px-3 py-4">
+                            <div className="flex flex-col items-center gap-1.5 min-w-[80px]">
+                              <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden shadow-inner">
+                                <div
+                                  className={`h-full rounded-full transition-all duration-1000 ${porcentaje > 90 ? 'bg-gradient-to-r from-red-500 to-red-400' : porcentaje > 70 ? 'bg-gradient-to-r from-amber-500 to-amber-400' : 'bg-gradient-to-r from-emerald-500 to-emerald-400'} shadow-lg`}
+                                  style={{ width: `${Math.min(porcentaje, 100)}%` }}
+                                />
+                              </div>
+                              <span className="text-[9px] font-black text-slate-500 tabular-nums">{porcentaje.toFixed(1)}%</span>
+                            </div>
+                          </td>
+                          <td className="px-3 py-4 text-right">
+                            <div className="flex justify-end gap-2 opacity-40 group-hover:opacity-100 transition-opacity">
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-8 w-8 p-0 rounded-xl hover:bg-white hover:shadow-md transition-all text-slate-400 hover:text-emerald-600 border border-transparent hover:border-slate-100"
+                                onClick={() => handleOpenDetail(item)}
+                              >
+                                <Eye className="h-3.5 w-3.5" />
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-8 w-8 p-0 rounded-xl hover:bg-white hover:shadow-md transition-all text-slate-400 hover:text-blue-600 border border-transparent hover:border-slate-100"
+                                onClick={() => {
+                                  setSelectedItem(item)
+                                  setIsExecutionOpen(true)
+                                }}
+                              >
+                                <ArrowUpRight className="h-3.5 w-3.5" />
+                              </Button>
+                            </div>
+                          </td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Floating Modals and Dialogs */}
+        <BudgetItemDetailDialog
+          item={selectedItem}
+          open={isDetailOpen}
+          onOpenChange={setIsDetailOpen}
+        />
+
+        <Dialog open={isExecutionOpen} onOpenChange={setIsExecutionOpen}>
+          <DialogContent className="sm:max-w-[500px] border-none shadow-2xl rounded-[2.5rem] overflow-hidden p-0 animate-in zoom-in-95 duration-300">
+            <div className="bg-gradient-to-br from-blue-600 to-blue-500 p-10 text-white relative overflow-hidden">
+              <div className="absolute top-0 right-0 p-10 opacity-10">
+                <TrendingUp className="h-32 w-32" />
+              </div>
+              <div className="relative z-10">
+                <DialogHeader>
+                  <DialogTitle className="text-3xl font-black leading-tight">Ejecutar Fisco</DialogTitle>
+                  <CardDescription className="text-blue-100 font-medium mt-2">Registrar desembolso para: <span className="font-black underline">{selectedItem?.nombre}</span></CardDescription>
+                </DialogHeader>
+              </div>
+            </div>
+            <div className="p-10 bg-white">
+              <BudgetExecutionForm
+                budgetItemId={selectedItem?.id || ""}
+                onSuccess={() => {
+                  setIsExecutionOpen(false)
+                  fetchBudgetItems()
+                }}
+              />
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        <BudgetReportDialog
+          open={isReportOpen}
+          onOpenChange={setIsReportOpen}
+        />
+
+        <Suspense fallback={null}>
+          <SearchResultsHandler budgetItems={budgetItems} onOpen={handleOpenDetail} />
+        </Suspense>
+      </div>
+    </DashboardLayout>
+  )
+}
