@@ -9,8 +9,9 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Loader2, ArrowLeft, Save } from "lucide-react"
+import { Loader2, ArrowLeft, Save, Paperclip } from "lucide-react"
 import { toast } from "sonner"
+import { FileUploader } from "@/components/ui/file-uploader"
 
 export default function NuevoAsientoPage() {
     const router = useRouter()
@@ -25,7 +26,8 @@ export default function NuevoAsientoPage() {
         centroCosto: "",
         proyecto: "",
         documentoRef: "",
-        observaciones: ""
+        observaciones: "",
+        evidenciaUrls: [] as string[]
     })
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -235,6 +237,18 @@ export default function NuevoAsientoPage() {
                                             onChange={handleChange}
                                         />
                                     </div>
+                                </div>
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label htmlFor="evidencia" className="text-xs font-bold uppercase text-gray-400 flex items-center gap-2">
+                                    <Paperclip className="h-3.5 w-3.5" /> Soporte Digital (Evidencia)
+                                </Label>
+                                <div className="bg-white p-1 border border-gray-100 rounded-xl">
+                                    <FileUploader
+                                        value={formData.evidenciaUrls}
+                                        onChange={(urls) => setFormData({ ...formData, evidenciaUrls: urls })}
+                                    />
                                 </div>
                             </div>
 

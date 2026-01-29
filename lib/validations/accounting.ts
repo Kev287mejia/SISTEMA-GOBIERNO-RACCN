@@ -49,6 +49,7 @@ export const createAccountingEntrySchema = z.object({
     .string()
     .max(2000, "Las observaciones no pueden exceder 2000 caracteres")
     .optional(),
+  evidenciaUrls: z.array(z.string()).optional().default([]),
 })
 
 export const updateAccountingEntrySchema = createAccountingEntrySchema.partial().extend({

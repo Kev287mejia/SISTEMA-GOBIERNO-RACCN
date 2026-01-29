@@ -22,8 +22,12 @@ import {
     MessageSquare,
     Printer,
     ArrowUpRight,
-    ArrowDownLeft
+    ArrowDownLeft,
+    Paperclip
 } from "lucide-react"
+import { FileUploader } from "@/components/ui/file-uploader"
+import { useState, useEffect } from "react"
+import { toast } from "sonner"
 
 interface AccountingEntryDetailDialogProps {
     entry: any | null
@@ -50,6 +54,43 @@ export function AccountingEntryDetailDialog({ entry, open, onOpenChange }: Accou
     }
 
     const { icon: StatusIcon, color: statusColor, text: textColor, bg: bgColor } = getStatusConfig(entry.estado)
+
+    // Attachments Logic
+    const [attachments, setAttachments] = useState<string[]>([])
+    const isEditable = entry.estado !== "APROBADO" && entry.estado !== "ANULADO"
+
+    useEffect(() => {
+        if (entry) {
+            setAttachments(entry.evidenciaUrls || [])
+        }
+    }, [entry])
+
+    const handleAttachmentsChange = async (newUrls: string[]) => {
+        setAttachments(newUrls) // Optimistic update
+
+        if (!isEditable) return
+
+        try {
+            const res = await fetch(`/api/accounting-entries/${entry.id}`, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ evidenciaUrls: newUrls })
+            })
+
+            const responseData = await res.json()
+
+            if (!res.ok) {
+                console.error("Server Error:", responseData)
+                throw new Error(responseData.error || "Error al guardar adjuntos")
+            }
+
+            toast.success("Evidencia actualizada correctamente")
+        } catch (error: any) {
+            console.error("Full Error:", error)
+            toast.error(error.message || "No se pudieron guardar los cambios")
+            setAttachments(entry.evidenciaUrls || []) // Revert
+        }
+    }
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
@@ -106,6 +147,20 @@ export function AccountingEntryDetailDialog({ entry, open, onOpenChange }: Accou
                                 <p className="text-sm text-gray-700 leading-relaxed font-medium capitalize">
                                     {entry.descripcion}
                                 </p>
+                            </div>
+                        </section>
+
+                        {/* Attachments Section */}
+                        <section className="space-y-4">
+                            <h3 className="text-[11px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                                <Paperclip className="h-3 w-3" /> Soporte Digital (Evidencia)
+                            </h3>
+                            <div className="bg-white p-1">
+                                <FileUploader
+                                    value={attachments}
+                                    onChange={handleAttachmentsChange}
+                                    disabled={!isEditable}
+                                />
                             </div>
                         </section>
 
@@ -215,9 +270,19 @@ export function AccountingEntryDetailDialog({ entry, open, onOpenChange }: Accou
                 </div>
 
                 {/* Footer Actions */}
-                <div className="p-4 bg-gray-50 flex justify-end gap-3 border-t">
+                <div className="p-4 bg-gray-50 flex justify-end gap-3 border-t print:hidden">
                     <button
-                        onClick={() => window.print()}
+                        onClick={() => {
+                            const width = 1000;
+                            const height = 800;
+                            const left = (window.screen.width - width) / 2;
+                            const top = (window.screen.height - height) / 2;
+                            window.open(
+                                `/contabilidad/print/${entry.id}`,
+                                'PrintWindow',
+                                `width=${width},height=${height},top=${top},left=${left},scrollbars=yes,status=no,resizable=yes`
+                            );
+                        }}
                         className="px-6 py-2.5 text-[10px] font-black uppercase text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-xl transition-all border border-gray-200 flex items-center gap-2"
                     >
                         <Printer className="h-3.5 w-3.5" /> Generar Comprobante

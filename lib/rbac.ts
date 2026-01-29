@@ -125,6 +125,9 @@ export const routePermissions: Record<string, Role[]> = {
     Role.Admin,
     Role.RRHH,
     Role.DirectoraRRHH,
+    Role.CoordinadorGobierno,
+    Role.ContadorGeneral,
+    Role.ResponsableContabilidad,
   ],
   "/auditoria": [
     Role.Admin,
@@ -223,7 +226,46 @@ export const routePermissions: Record<string, Role[]> = {
     Role.CoordinadorGobierno,
     Role.DirectoraDAF,
     Role.ResponsablePresupuesto,
+    Role.ResponsablePresupuesto,
     Role.ResponsableContabilidad,
+  ],
+  "/api/upload": [
+    Role.Admin,
+    Role.ContadorGeneral,
+    Role.AuxiliarContable,
+    Role.Auditor,
+    Role.CoordinadorGobierno,
+    Role.DirectoraDAF,
+    Role.ResponsableCaja,
+    Role.ResponsablePresupuesto,
+    Role.ResponsableContabilidad,
+  ],
+  "/api/accounting/analytics": [
+    Role.Admin,
+    Role.ContadorGeneral,
+    Role.ResponsableContabilidad,
+    Role.Auditor,
+    Role.CoordinadorGobierno,
+    Role.ResponsablePresupuesto,
+    Role.ResponsableContabilidad
+  ],
+  "/api/inventory/items": [
+    Role.Admin,
+    Role.Bodega,
+    Role.ContadorGeneral,
+    Role.ResponsableContabilidad
+  ],
+  "/api/inventory/transactions": [
+    Role.Admin,
+    Role.Bodega,
+    Role.ContadorGeneral,
+    Role.ResponsableContabilidad
+  ],
+  "/api/inventory/sku-generator": [
+    Role.Admin,
+    Role.Bodega,
+    Role.ContadorGeneral,
+    Role.ResponsableContabilidad
   ],
 }
 

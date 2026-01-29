@@ -27,6 +27,8 @@ import { Input } from "@/components/ui/input"
 import { BudgetItemDetailDialog } from "@/components/budget/budget-item-detail-dialog"
 import { BudgetExecutionForm } from "@/components/budget/budget-execution-form"
 import { BudgetReportDialog } from "@/components/budget/budget-report-dialog"
+import { BudgetCharts } from "@/components/budget/budget-charts"
+import { BudgetProgressBar } from "@/components/budget/budget-progress-bar"
 import {
   Select,
   SelectContent,
@@ -82,6 +84,10 @@ export default function PresupuestoPage() {
   const [isDetailOpen, setIsDetailOpen] = useState(false)
   const [isExecutionOpen, setIsExecutionOpen] = useState(false)
   const [isReportOpen, setIsReportOpen] = useState(false)
+
+  // Analytics State
+  const [analyticsData, setAnalyticsData] = useState({ trendData: [], pieData: [] })
+  const [loadingAnalytics, setLoadingAnalytics] = useState(true)
 
   // Filters
   const [regionFilter, setRegionFilter] = useState("all")
@@ -147,10 +153,26 @@ export default function PresupuestoPage() {
     }
   }
 
+  const fetchAnalytics = async () => {
+    try {
+      setLoadingAnalytics(true)
+      const res = await fetch("/api/budget/analytics")
+      if (res.ok) {
+        const data = await res.json()
+        setAnalyticsData(data)
+      }
+    } catch (error) {
+      console.error("[PRESUPUESTO] Error fetching analytics:", error)
+    } finally {
+      setLoadingAnalytics(false)
+    }
+  }
+
   // Initial load on mount
   useEffect(() => {
     console.log("[PRESUPUESTO] Component mounted, initial fetch")
     fetchBudgetItems()
+    fetchAnalytics()
   }, [])
 
   // Reload when filters change
@@ -176,6 +198,7 @@ export default function PresupuestoPage() {
       if (res.ok) {
         setIsDialogOpen(false)
         fetchBudgetItems()
+        fetchAnalytics()
         setNewItem({
           codigo: "",
           nombre: "",
@@ -439,6 +462,13 @@ export default function PresupuestoPage() {
           </div>
         </div>
 
+        {/* Analytics Section - Charts */}
+        <BudgetCharts
+          trendData={analyticsData.trendData}
+          pieData={analyticsData.pieData}
+          loading={loadingAnalytics}
+        />
+
         {/* Master List Section */}
         <div className="bg-white rounded-[3rem] shadow-2xl shadow-slate-200/50 border border-slate-100 overflow-hidden transition-all duration-500">
           <div className="p-10 border-b border-slate-50 bg-gradient-to-br from-slate-50/50 to-transparent flex flex-col md:flex-row md:items-center justify-between gap-8">
@@ -545,14 +575,12 @@ export default function PresupuestoPage() {
                             </span>
                           </td>
                           <td className="px-3 py-4">
-                            <div className="flex flex-col items-center gap-1.5 min-w-[80px]">
-                              <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden shadow-inner">
-                                <div
-                                  className={`h-full rounded-full transition-all duration-1000 ${porcentaje > 90 ? 'bg-gradient-to-r from-red-500 to-red-400' : porcentaje > 70 ? 'bg-gradient-to-r from-amber-500 to-amber-400' : 'bg-gradient-to-r from-emerald-500 to-emerald-400'} shadow-lg`}
-                                  style={{ width: `${Math.min(porcentaje, 100)}%` }}
-                                />
-                              </div>
-                              <span className="text-[9px] font-black text-slate-500 tabular-nums">{porcentaje.toFixed(1)}%</span>
+                            <div className="min-w-[100px]">
+                              <BudgetProgressBar
+                                current={Number(item.montoEjecutado)}
+                                total={Number(item.montoAsignado)}
+                                height="h-2"
+                              />
                             </div>
                           </td>
                           <td className="px-3 py-4 text-right">
@@ -614,6 +642,7 @@ export default function PresupuestoPage() {
                 onSuccess={() => {
                   setIsExecutionOpen(false)
                   fetchBudgetItems()
+                  fetchAnalytics()
                 }}
               />
             </div>

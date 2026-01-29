@@ -190,9 +190,9 @@ async function main() {
       nombre: "Julio",
       apellido: "Lopez Escobar",
       cedula: "607-140373-0002B",
-      cargo: "Responsable del Área de Contabilidad",
+      cargo: "Contador General",
       departamento: "Dirección Administrativa Financiera – Contabilidad",
-      role: Role.ResponsableContabilidad as any,
+      role: Role.ContadorGeneral,
       activo: true
     },
     create: {
@@ -201,9 +201,9 @@ async function main() {
       nombre: "Julio",
       apellido: "Lopez Escobar",
       cedula: "607-140373-0002B",
-      cargo: "Responsable del Área de Contabilidad",
+      cargo: "Contador General",
       departamento: "Dirección Administrativa Financiera – Contabilidad",
-      role: Role.ResponsableContabilidad as any,
+      role: Role.ContadorGeneral,
       activo: true,
     },
   })

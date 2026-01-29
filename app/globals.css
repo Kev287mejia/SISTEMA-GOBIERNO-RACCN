@@ -57,3 +57,50 @@
     @apply bg-background text-foreground;
   }
 }
+
+@media print {
+  /* Hide practically everything that isn't the dialog */
+  body > * {
+    display: none !important;
+  }
+  
+  /* Make the dialog container visible and full width */
+  body > [role="dialog"],
+  [role="dialog"] {
+    display: block !important;
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    height: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    background: white !important;
+    z-index: 9999 !important;
+  }
+
+  /* Ensure dialog content is visible and takes full width */
+  [role="dialog"] > * {
+      display: block !important;
+      visibility: visible !important;
+      width: 100% !important;
+      max-width: none !important;
+      position: static !important;
+      transform: none !important;
+      box-shadow: none !important;
+      border: none !important;
+      border-radius: 0 !important;
+  }
+  
+  /* Reset background colors for printing */
+  .bg-gray-50, .bg-slate-50, .bg-indigo-50 {
+      background-color: white !important;
+  }
+
+  /* Force background graphics (colors) to be printed */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+}

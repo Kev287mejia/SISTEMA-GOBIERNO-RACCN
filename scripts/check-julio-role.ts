@@ -13,7 +13,8 @@ async function checkJulioRole() {
             nombre: true,
             apellido: true,
             email: true,
-            role: true
+            role: true,
+            deniedModules: true
         }
     })
 

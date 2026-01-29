@@ -84,7 +84,8 @@ export async function POST(
                         centroCosto: body.centroCosto || "ADMINISTRACION",
                         documentoRef: referencia,
                         estado: EntryStatus.PENDIENTE,
-                        creadoPorId: session.user.id
+                        creadoPorId: session.user.id,
+                        evidenciaUrls: body.evidenciaUrls || []
                     }
                 })
                 accountingId = entry.id
@@ -100,7 +101,8 @@ export async function POST(
                     referencia,
                     usuarioId: session.user.id,
                     estado: 'PENDIENTE_VALIDACION',
-                    accountingEntryId: accountingId
+                    accountingEntryId: accountingId,
+                    evidenciaUrls: body.evidenciaUrls || []
                 }
             })
 

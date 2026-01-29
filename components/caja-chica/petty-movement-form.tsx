@@ -16,6 +16,8 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { toast } from "sonner"
+import { FileUploader } from "@/components/ui/file-uploader"
+import { Paperclip } from "lucide-react"
 
 const formSchema = z.object({
     tipo: z.enum(["INGRESO", "EGRESO", "AJUSTE"]),
@@ -25,6 +27,7 @@ const formSchema = z.object({
     cuentaContable: z.string().optional(),
     centroCosto: z.string().optional(),
     crearAsiento: z.boolean(),
+    evidenciaUrls: z.array(z.string()).optional().default([]),
 })
 
 export function PettyMovementForm({ boxId, onSuccess }: { boxId: string, onSuccess: () => void }) {
@@ -40,6 +43,7 @@ export function PettyMovementForm({ boxId, onSuccess }: { boxId: string, onSucce
             cuentaContable: "1102-01-01",
             centroCosto: "ADMINISTRACION",
             crearAsiento: true,
+            evidenciaUrls: [],
         },
     })
 
@@ -57,6 +61,7 @@ export function PettyMovementForm({ boxId, onSuccess }: { boxId: string, onSucce
 
             if (res.ok) {
                 onSuccess()
+                form.reset() // Optional: Clear form
             } else {
                 const err = await res.text()
                 toast.error(err || "Error al registrar movimiento")
@@ -165,6 +170,27 @@ export function PettyMovementForm({ boxId, onSuccess }: { boxId: string, onSucce
                         )}
                     />
                 </div>
+
+                <FormField
+                    control={form.control}
+                    name="evidenciaUrls"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel className="flex items-center gap-2">
+                                <Paperclip className="h-4 w-4" /> Soporte Digital (Evidencia)
+                            </FormLabel>
+                            <FormControl>
+                                <div className="bg-white p-1 border border-slate-200 rounded-xl">
+                                    <FileUploader
+                                        value={field.value}
+                                        onChange={field.onChange}
+                                    />
+                                </div>
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
 
                 <Button type="submit" className="w-full bg-slate-900" disabled={loading}>
                     {loading ? "Procesando..." : "Registrar en Bitácora"}

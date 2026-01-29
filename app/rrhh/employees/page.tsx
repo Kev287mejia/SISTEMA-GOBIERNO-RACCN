@@ -21,7 +21,8 @@ import {
     ShieldCheck,
     Smartphone,
     CheckCircle2,
-    FileBarChart
+    FileBarChart,
+    Fingerprint
 } from "lucide-react"
 import Link from "next/link"
 import { formatCurrency } from "@/lib/utils"
@@ -33,8 +34,20 @@ type EmployeeWithRelations = {
     nombre: string
     apellido: string
     cedula: string
+    inss?: string
+    ruc?: string
     email: string
     telefono: string
+    direccion: string
+    profesion?: string
+    nivelAcademico?: string
+    hijos?: number
+    contactoEmergencia?: string
+    telefonoEmergencia?: string
+    tipoSangre?: string
+    banco?: string
+    numeroCuenta?: string
+    tipoCuenta?: string
     estado: string
     fechaIngreso: string
     createdAt: string
@@ -53,6 +66,7 @@ export default function EmployeesPage() {
     const [selectedEmployee, setSelectedEmployee] = useState<EmployeeWithRelations | null>(null)
     const [isDetailOpen, setIsDetailOpen] = useState(false)
     const [search, setSearch] = useState("")
+    const [mounted, setMounted] = useState(false)
     const [stats, setStats] = useState({
         total: 0,
         active: 0,
@@ -61,6 +75,7 @@ export default function EmployeesPage() {
     })
 
     useEffect(() => {
+        setMounted(true)
         fetchEmployees()
         fetchStats()
     }, [])
@@ -229,7 +244,7 @@ export default function EmployeesPage() {
                                     <thead>
                                         <tr className="bg-gray-50/50">
                                             <th className="h-14 px-6 text-left align-middle font-black text-[10px] uppercase tracking-wider text-gray-400">Funcionario / Perfil</th>
-                                            <th className="h-14 px-6 text-left align-middle font-black text-[10px] uppercase tracking-wider text-gray-400">Identificación</th>
+                                            <th className="h-14 px-6 text-left align-middle font-black text-[10px] uppercase tracking-wider text-gray-400">Cédula e INSS</th>
                                             <th className="h-14 px-6 text-left align-middle font-black text-[10px] uppercase tracking-wider text-gray-400">Cargo & Departamento</th>
                                             <th className="h-14 px-6 text-center align-middle font-black text-[10px] uppercase tracking-wider text-gray-400">Fecha Ingreso</th>
                                             <th className="h-14 px-6 text-center align-middle font-black text-[10px] uppercase tracking-wider text-gray-400">Estado</th>
@@ -260,8 +275,8 @@ export default function EmployeesPage() {
                                                         <div className="flex flex-col">
                                                             <span className="font-mono text-xs font-black text-gray-700">{emp.cedula}</span>
                                                             <div className="flex items-center gap-1 mt-1">
-                                                                <Smartphone className="h-3 w-3 text-emerald-400" />
-                                                                <span className="text-[10px] text-gray-400 font-medium">{emp.telefono}</span>
+                                                                <Fingerprint className="h-3 w-3 text-emerald-400" />
+                                                                <span className="text-[10px] text-gray-400 font-black uppercase">INSS: {emp.inss || '---'}</span>
                                                             </div>
                                                         </div>
                                                     </td>
@@ -310,7 +325,7 @@ export default function EmployeesPage() {
                                 <span>Trazabilidad de Expedientes Activa</span>
                             </div>
                         </div>
-                        <p>Actualizado: {new Date().toLocaleDateString()}</p>
+                        <p>Actualizado: {mounted ? new Date().toLocaleDateString() : ""}</p>
                     </div>
                 </Card>
             </div>

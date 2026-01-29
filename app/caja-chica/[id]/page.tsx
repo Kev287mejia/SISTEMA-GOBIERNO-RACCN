@@ -12,7 +12,8 @@ import {
     Clock,
     User as UserIcon,
     History,
-    Edit3
+    Edit3,
+    Printer
 } from "lucide-react"
 import { PettyCorrectionDialog } from "@/components/caja-chica/correction-dialog"
 import { useRouter } from "next/navigation"
@@ -139,6 +140,15 @@ export default function PettyCashHistoryPage({ params }: { params: { id: string 
                                                             className="h-8 w-8 p-0"
                                                         >
                                                             <Edit3 className="h-3.5 w-3.5" />
+                                                        </Button>
+                                                        <Button
+                                                            size="sm"
+                                                            variant="ghost"
+                                                            className="h-8 w-8 p-0"
+                                                            onClick={() => window.open(`/caja-chica/print/${move.id}`, '_blank', 'width=900,height=800')}
+                                                            title="Imprimir Vale"
+                                                        >
+                                                            <Printer className="h-3.5 w-3.5 text-slate-500" />
                                                         </Button>
                                                         <Button
                                                             size="sm"

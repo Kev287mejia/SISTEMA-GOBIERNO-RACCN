@@ -72,6 +72,7 @@ export async function createAccountingEntry(data: {
   proyecto?: string
   documentoRef?: string
   observaciones?: string
+  evidenciaUrls?: string[]
 }) {
   const session = await getServerSession(authOptions)
 
@@ -145,6 +146,7 @@ export async function updateAccountingEntry(
     proyecto?: string
     documentoRef?: string
     observaciones?: string
+    evidenciaUrls?: string[]
   }
 ) {
   const session = await getServerSession(authOptions)

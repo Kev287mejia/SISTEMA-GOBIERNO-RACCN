@@ -27,6 +27,8 @@ import { formatCurrency } from "@/lib/utils"
 import { Input } from "@/components/ui/input"
 import { InventoryItemDetailDialog } from "@/components/inventory/inventory-item-detail-dialog"
 import { KardexReportDialog } from "@/components/inventory/kardex-report-dialog"
+import { CreateInventoryItemDialog } from "@/components/inventory/create-inventory-item-dialog"
+import { CreateTransactionDialog } from "@/components/inventory/create-transaction-dialog"
 
 type InventoryItem = {
   id: string
@@ -200,127 +202,17 @@ export default function InventarioPage() {
             >
               <FileBarChart className="h-4 w-4" /> Informe Kardex
             </Button>
-            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-              <DialogTrigger asChild>
-                <Button className="bg-indigo-600 hover:bg-indigo-700 gap-2 shadow-lg shadow-indigo-100">
-                  <Plus className="h-4 w-4" /> Nuevo Artículo
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="sm:max-w-[500px] rounded-2xl">
-                <DialogHeader>
-                  <DialogTitle className="text-2xl font-black">Registro de Artículo</DialogTitle>
-                </DialogHeader>
-                <form onSubmit={handleSubmitItem} className="space-y-6 py-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Código / SKU</label>
-                      <Input
-                        required
-                        className="rounded-xl border-gray-100 bg-gray-50 focus-visible:ring-indigo-500"
-                        value={newItem.codigo}
-                        onChange={(e) => setNewItem({ ...newItem, codigo: e.target.value })}
-                        placeholder="Ej: ART-001"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Unidad de Medida</label>
-                      <Input
-                        required
-                        className="rounded-xl border-gray-100 bg-gray-50 focus-visible:ring-indigo-500"
-                        value={newItem.unidadMedida}
-                        onChange={(e) => setNewItem({ ...newItem, unidadMedida: e.target.value })}
-                        placeholder="UN, KG, MT"
-                      />
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Nombre del Artículo</label>
-                    <Input
-                      required
-                      className="rounded-xl border-gray-100 bg-gray-50 focus-visible:ring-indigo-500"
-                      value={newItem.nombre}
-                      onChange={(e) => setNewItem({ ...newItem, nombre: e.target.value })}
-                      placeholder="Descripción corta del item"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Descripción Técnica</label>
-                    <textarea
-                      className="flex min-h-[80px] w-full rounded-xl border border-gray-100 bg-gray-50 px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none"
-                      value={newItem.descripcion}
-                      onChange={(e) => setNewItem({ ...newItem, descripcion: e.target.value })}
-                      placeholder="Especificaciones o detalles del artículo..."
-                    />
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Categoría</label>
-                      <Input
-                        required
-                        className="rounded-xl border-gray-100 bg-gray-50 focus-visible:ring-indigo-500"
-                        value={newItem.categoria}
-                        onChange={(e) => setNewItem({ ...newItem, categoria: e.target.value })}
-                        placeholder="OFICINA, LIMPIEZA"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Método de Valuación</label>
-                      <select
-                        required
-                        className="flex h-10 w-full rounded-xl border border-gray-100 bg-gray-50 px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none"
-                        value={newItem.metodoKardex}
-                        onChange={(e) => setNewItem({ ...newItem, metodoKardex: e.target.value })}
-                      >
-                        <option value="PROMEDIO">Promedio Ponderado</option>
-                        <option value="FIFO">FIFO (PEPS)</option>
-                        <option value="LIFO">LIFO (UEPS)</option>
-                      </select>
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-3 gap-4">
-                    <div className="space-y-2">
-                      <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Punto de Reorden</label>
-                      <Input
-                        required
-                        type="number"
-                        className="rounded-xl border-gray-100 bg-gray-50 focus-visible:ring-indigo-500"
-                        value={newItem.stockMinimo}
-                        onChange={(e) => setNewItem({ ...newItem, stockMinimo: e.target.value })}
-                        placeholder="Mín"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Capacidad Máx.</label>
-                      <Input
-                        required
-                        type="number"
-                        className="rounded-xl border-gray-100 bg-gray-50 focus-visible:ring-indigo-500"
-                        value={newItem.stockMaximo}
-                        onChange={(e) => setNewItem({ ...newItem, stockMaximo: e.target.value })}
-                        placeholder="Máx"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Costo Base (C$)</label>
-                      <Input
-                        required
-                        type="number"
-                        step="0.01"
-                        className="rounded-xl border-gray-100 bg-gray-50 focus-visible:ring-indigo-500"
-                        value={newItem.costoUnitario}
-                        onChange={(e) => setNewItem({ ...newItem, costoUnitario: e.target.value })}
-                        placeholder="0.00"
-                      />
-                    </div>
-                  </div>
-                  <DialogFooter>
-                    <Button type="submit" className="w-full bg-indigo-600 hover:bg-indigo-700 h-12 rounded-xl font-black uppercase tracking-widest text-xs shadow-lg shadow-indigo-100">
-                      Confirmar Alta de Artículo
-                    </Button>
-                  </DialogFooter>
-                </form>
-              </DialogContent>
-            </Dialog>
+            <CreateInventoryItemDialog
+              open={isDialogOpen}
+              onOpenChange={setIsDialogOpen}
+              onSuccess={fetchItems}
+            />
+            <Button
+              onClick={() => setIsDialogOpen(true)}
+              className="bg-indigo-600 hover:bg-indigo-700 gap-2 shadow-lg shadow-indigo-100"
+            >
+              <Plus className="h-4 w-4" /> Nuevo Artículo
+            </Button>
           </div>
         </div>
 
@@ -483,76 +375,27 @@ export default function InventarioPage() {
                           </td>
                           <td className="px-6 py-4 text-right">
                             <div className="flex items-center justify-end gap-2">
-                              <Dialog open={isTransactionDialogOpen && selectedItem?.id === item.id} onOpenChange={(open) => {
-                                setIsTransactionDialogOpen(open)
-                                if (!open) setSelectedItem(null)
-                              }}>
-                                <DialogTrigger asChild>
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    className="h-8 border-indigo-100 text-indigo-600 hover:bg-indigo-50 font-black text-[10px] uppercase rounded-lg"
-                                    onClick={() => setSelectedItem(item)}
-                                  >
-                                    <ArrowRightLeft className="mr-1.5 h-3 w-3" /> Kardex
-                                  </Button>
-                                </DialogTrigger>
-                                <DialogContent className="rounded-2xl">
-                                  <DialogHeader>
-                                    <DialogTitle className="text-xl font-black">Registrar Movimiento</DialogTitle>
-                                  </DialogHeader>
-                                  <form onSubmit={handleSubmitTransaction} className="space-y-6 py-4">
-                                    <div className="space-y-2">
-                                      <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Tipo de Movimiento</label>
-                                      <select
-                                        required
-                                        className="flex h-10 w-full rounded-xl border border-gray-100 bg-gray-50 px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none"
-                                        value={newTransaction.tipo}
-                                        onChange={(e) => setNewTransaction({ ...newTransaction, tipo: e.target.value })}
-                                      >
-                                        <option value="ENTRADA">Entrada (Compra/Donación)</option>
-                                        <option value="SALIDA">Salida (Consumo/Despacho)</option>
-                                        <option value="AJUSTE">Ajuste de Inventario</option>
-                                      </select>
-                                    </div>
-                                    <div className="grid grid-cols-2 gap-4">
-                                      <div className="space-y-2">
-                                        <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Cantidad</label>
-                                        <Input
-                                          required
-                                          type="number"
-                                          className="rounded-xl border-gray-100 bg-gray-50"
-                                          value={newTransaction.cantidad}
-                                          onChange={(e) => setNewTransaction({ ...newTransaction, cantidad: e.target.value })}
-                                        />
-                                      </div>
-                                      <div className="space-y-2">
-                                        <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Costo Unitario (C$)</label>
-                                        <Input
-                                          type="number"
-                                          step="0.01"
-                                          className="rounded-xl border-gray-100 bg-gray-50"
-                                          value={newTransaction.costoUnitario}
-                                          onChange={(e) => setNewTransaction({ ...newTransaction, costoUnitario: e.target.value })}
-                                          placeholder={item.costoUnitario.toString()}
-                                        />
-                                      </div>
-                                    </div>
-                                    <div className="space-y-2">
-                                      <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Documento de Referencia</label>
-                                      <Input
-                                        className="rounded-xl border-gray-100 bg-gray-50"
-                                        value={newTransaction.documentoRef}
-                                        onChange={(e) => setNewTransaction({ ...newTransaction, documentoRef: e.target.value })}
-                                        placeholder="N° Factura o Comprobante"
-                                      />
-                                    </div>
-                                    <DialogFooter>
-                                      <Button type="submit" className="w-full bg-indigo-600 hover:bg-indigo-700 h-12 rounded-xl font-black uppercase tracking-widest text-xs">Registrar Movimiento</Button>
-                                    </DialogFooter>
-                                  </form>
-                                </DialogContent>
-                              </Dialog>
+                              <CreateTransactionDialog
+                                open={isTransactionDialogOpen && selectedItem?.id === item.id}
+                                onOpenChange={(open) => {
+                                  setIsTransactionDialogOpen(open)
+                                  if (!open) setSelectedItem(null)
+                                }}
+                                item={item}
+                                onSuccess={fetchItems}
+                              />
+
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-8 border-indigo-100 text-indigo-600 hover:bg-indigo-50 font-black text-[10px] uppercase rounded-lg"
+                                onClick={() => {
+                                  setSelectedItem(item)
+                                  setIsTransactionDialogOpen(true)
+                                }}
+                              >
+                                <ArrowRightLeft className="mr-1.5 h-3 w-3" /> Kardex
+                              </Button>
 
                               <Button
                                 size="sm"

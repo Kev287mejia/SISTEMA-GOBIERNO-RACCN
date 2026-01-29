@@ -6,10 +6,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import {
   BarChart,
   Bar,
+  AreaChart,
   LineChart,
   Line,
   PieChart,
   Pie,
+  Area,
   Cell,
   XAxis,
   YAxis,
@@ -225,55 +227,91 @@ export default function DashboardPage() {
         {/* Charts Row 1 */}
         <div className="grid gap-6 md:grid-cols-2">
           {/* Budget by Type */}
-          <Card className="border-none shadow-xl">
+          <Card className="border-none shadow-xl overflow-hidden">
             <CardHeader>
               <CardTitle className="text-xl font-black uppercase tracking-tight">Presupuesto por Tipo</CardTitle>
-              <CardDescription>Distribución por tipo de gasto</CardDescription>
+              <CardDescription>Distribución por naturaleza del gasto</CardDescription>
             </CardHeader>
             <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={stats?.charts.presupuestoPorTipo || []}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                  <XAxis dataKey="tipo" tick={{ fontSize: 12, fontWeight: 600 }} />
-                  <YAxis tick={{ fontSize: 12, fontWeight: 600 }} />
-                  <Tooltip
-                    contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 40px rgba(0,0,0,0.1)' }}
-                    formatter={(value: number) => formatCurrency(value)}
-                  />
-                  <Legend wrapperStyle={{ fontSize: '12px', fontWeight: 600 }} />
-                  <Bar dataKey="asignado" fill="#10b981" name="Asignado" radius={[8, 8, 0, 0]} />
-                  <Bar dataKey="ejecutado" fill="#3b82f6" name="Ejecutado" radius={[8, 8, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
+              <div className="h-[300px] w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={stats?.charts.presupuestoPorTipo || []} barSize={40}>
+                    <defs>
+                      <linearGradient id="colorAsignado" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#10b981" stopOpacity={0.8} />
+                        <stop offset="95%" stopColor="#10b981" stopOpacity={0.3} />
+                      </linearGradient>
+                      <linearGradient id="colorEjecutado" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.8} />
+                        <stop offset="95%" stopColor="#3b82f6" stopOpacity={0.3} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                    <XAxis
+                      dataKey="tipo"
+                      axisLine={false}
+                      tickLine={false}
+                      tick={{ fontSize: 10, fontWeight: 700, fill: '#64748b' }}
+                      dy={10}
+                    />
+                    <YAxis
+                      axisLine={false}
+                      tickLine={false}
+                      tick={{ fontSize: 10, fontWeight: 700, fill: '#64748b' }}
+                      tickFormatter={(value) => `${(value / 1000000).toFixed(1)}M`}
+                    />
+                    <Tooltip
+                      contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 40px rgba(0,0,0,0.1)' }}
+                      formatter={(value: number) => formatCurrency(value)}
+                      cursor={{ fill: '#f8fafc' }}
+                    />
+                    <Legend iconType="circle" wrapperStyle={{ fontSize: '12px', fontWeight: 600, paddingTop: '20px' }} />
+                    <Bar dataKey="asignado" fill="url(#colorAsignado)" name="Asignado" radius={[12, 12, 0, 0]} />
+                    <Bar dataKey="ejecutado" fill="url(#colorEjecutado)" name="Ejecutado" radius={[12, 12, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
             </CardContent>
           </Card>
 
           {/* Budget by Region */}
-          <Card className="border-none shadow-xl">
+          <Card className="border-none shadow-xl overflow-hidden">
             <CardHeader>
               <CardTitle className="text-xl font-black uppercase tracking-tight">Presupuesto por Región</CardTitle>
-              <CardDescription>Distribución por centro regional</CardDescription>
+              <CardDescription>Distribución geográfica de recursos</CardDescription>
             </CardHeader>
             <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                <PieChart>
-                  <Pie
-                    data={stats?.charts.presupuestoPorRegion || []}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={false}
-                    label={({ region, percent }) => `${region}: ${(percent * 100).toFixed(0)}%`}
-                    outerRadius={100}
-                    fill="#8884d8"
-                    dataKey="asignado"
-                  >
-                    {stats?.charts.presupuestoPorRegion.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip formatter={(value: number) => formatCurrency(value)} />
-                </PieChart>
-              </ResponsiveContainer>
+              <div className="h-[300px] w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={stats?.charts.presupuestoPorRegion || []}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={60}
+                      outerRadius={100}
+                      paddingAngle={5}
+                      dataKey="asignado"
+                      stroke="none"
+                    >
+                      {stats?.charts.presupuestoPorRegion.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip
+                      contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 40px rgba(0,0,0,0.1)' }}
+                      formatter={(value: number) => formatCurrency(value)}
+                    />
+                    <Legend
+                      layout="vertical"
+                      verticalAlign="middle"
+                      align="right"
+                      iconType="circle"
+                      formatter={(value, entry: any) => <span className="text-xs font-bold text-slate-600 ml-2">{value}</span>}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
             </CardContent>
           </Card>
         </div>
@@ -281,26 +319,61 @@ export default function DashboardPage() {
         {/* Charts Row 2 */}
         <div className="grid gap-6 md:grid-cols-3">
           {/* Monthly Trend */}
-          <Card className="border-none shadow-xl md:col-span-2">
+          <Card className="border-none shadow-xl md:col-span-2 overflow-hidden">
             <CardHeader>
-              <CardTitle className="text-xl font-black uppercase tracking-tight">Tendencia Mensual</CardTitle>
-              <CardDescription>Ejecución vs Proyección {new Date().getFullYear()}</CardDescription>
+              <CardTitle className="text-xl font-black uppercase tracking-tight">Tendencia Anual</CardTitle>
+              <CardDescription>Comportamiento de la ejecución presupuestaria mensual</CardDescription>
             </CardHeader>
             <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={stats?.charts.tendenciaMensual || []}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                  <XAxis dataKey="mes" tick={{ fontSize: 12, fontWeight: 600 }} />
-                  <YAxis tick={{ fontSize: 12, fontWeight: 600 }} />
-                  <Tooltip
-                    contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 40px rgba(0,0,0,0.1)' }}
-                    formatter={(value: number) => formatCurrency(value)}
-                  />
-                  <Legend wrapperStyle={{ fontSize: '12px', fontWeight: 600 }} />
-                  <Line type="monotone" dataKey="ejecutado" stroke="#10b981" strokeWidth={3} name="Ejecutado" />
-                  <Line type="monotone" dataKey="proyectado" stroke="#94a3b8" strokeWidth={2} strokeDasharray="5 5" name="Proyectado" />
-                </LineChart>
-              </ResponsiveContainer>
+              <div className="h-[300px] w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={stats?.charts.tendenciaMensual || []}>
+                    <defs>
+                      <linearGradient id="colorEjecutadoArea" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
+                        <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                    <XAxis
+                      dataKey="mes"
+                      axisLine={false}
+                      tickLine={false}
+                      tick={{ fontSize: 10, fontWeight: 700, fill: '#64748b' }}
+                      dy={10}
+                    />
+                    <YAxis
+                      axisLine={false}
+                      tickLine={false}
+                      tick={{ fontSize: 10, fontWeight: 700, fill: '#64748b' }}
+                      tickFormatter={(value) => `${(value / 1000).toFixed(0)}k`}
+                    />
+                    <Tooltip
+                      contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 40px rgba(0,0,0,0.1)' }}
+                      formatter={(value: number) => formatCurrency(value)}
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="ejecutado"
+                      stroke="#10b981"
+                      strokeWidth={4}
+                      fillOpacity={1}
+                      fill="url(#colorEjecutadoArea)"
+                      name="Ejecutado Real"
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="proyectado"
+                      stroke="#94a3b8"
+                      strokeWidth={2}
+                      strokeDasharray="5 5"
+                      dot={false}
+                      name="Proyección"
+                    />
+                    <Legend iconType="circle" wrapperStyle={{ fontSize: '12px', fontWeight: 600, paddingTop: '20px' }} />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
             </CardContent>
           </Card>
 

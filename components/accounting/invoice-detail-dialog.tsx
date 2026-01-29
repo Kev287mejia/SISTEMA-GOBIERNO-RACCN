@@ -81,7 +81,7 @@ export function InvoiceDetailDialog({ invoice, open, onOpenChange }: InvoiceDeta
                     </div>
                 </div>
 
-                <div className="p-8 bg-white grid grid-cols-2 gap-8">
+                <div className="p-8 bg-white grid grid-cols-1 md:grid-cols-2 gap-8">
                     <div className="space-y-6">
                         <section className="space-y-4">
                             <h3 className="text-[11px] font-black text-gray-400 uppercase tracking-wider flex items-center gap-2">
@@ -148,13 +148,47 @@ export function InvoiceDetailDialog({ invoice, open, onOpenChange }: InvoiceDeta
                         </section>
                     </div>
 
-                    <div className="space-y-6 bg-gray-50/50 p-6 rounded-2xl border border-gray-100">
-                        <section className="space-y-3">
+                    <div className="space-y-6 min-w-0">
+                        <section className="space-y-3 bg-gray-50/50 p-4 rounded-2xl border border-gray-100">
                             <h3 className="text-[11px] font-black text-indigo-400 uppercase tracking-wider">Descripción del Concepto</h3>
                             <p className="text-sm text-gray-700 leading-relaxed italic">
                                 &quot;{invoice.descripcion}&quot;
                             </p>
                         </section>
+
+                        {invoice.evidenciaUrls && invoice.evidenciaUrls.length > 0 && (
+                            <section className="space-y-3">
+                                <h3 className="text-[11px] font-black text-slate-400 uppercase tracking-wider flex items-center gap-2">
+                                    <FileText className="h-3 w-3" /> Anexos y Evidencias ({invoice.evidenciaUrls.length})
+                                </h3>
+                                <div className="grid grid-cols-2 gap-2 max-h-[160px] overflow-y-auto pr-2 custom-scrollbar">
+                                    {invoice.evidenciaUrls.map((url: string, index: number) => {
+                                        const isPdf = url.toLowerCase().endsWith('.pdf')
+                                        return (
+                                            <a
+                                                key={index}
+                                                href={url}
+                                                target="_blank"
+                                                rel="noreferrer"
+                                                className="group relative h-20 bg-slate-100 rounded-xl overflow-hidden border border-slate-200 hover:border-indigo-400 transition-all flex items-center justify-center"
+                                            >
+                                                {isPdf ? (
+                                                    <div className="flex flex-col items-center gap-1">
+                                                        <FileText className="h-6 w-6 text-rose-500" />
+                                                        <span className="text-[9px] font-bold text-slate-500">PDF</span>
+                                                    </div>
+                                                ) : (
+                                                    <>
+                                                        <img src={url} alt={`Evidencia ${index}`} className="w-full h-full object-cover group-hover:scale-110 transition-transform" />
+                                                        <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                                    </>
+                                                )}
+                                            </a>
+                                        )
+                                    })}
+                                </div>
+                            </section>
+                        )}
 
                         {invoice.observaciones && (
                             <section className="space-y-3">
@@ -169,10 +203,6 @@ export function InvoiceDetailDialog({ invoice, open, onOpenChange }: InvoiceDeta
                             <div className="flex justify-between items-center mb-2">
                                 <span className="text-[10px] font-bold text-gray-400 uppercase">Número de Asiento</span>
                                 <span className="text-[10px] font-mono font-bold text-gray-600">{invoice.numero}</span>
-                            </div>
-                            <div className="flex justify-between items-center text-xs">
-                                <span className="text-gray-500 font-medium">Ubicación</span>
-                                <span className="text-gray-800 font-bold">Registro Central</span>
                             </div>
                         </div>
                     </div>

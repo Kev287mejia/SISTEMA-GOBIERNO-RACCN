@@ -55,13 +55,26 @@ export async function POST(req: Request) {
       nombre,
       apellido,
       cedula,
+      inss,
+      ruc,
       email,
       telefono,
       direccion,
+      fechaNacimiento,
+      genero,
+      estadoCivil,
+      profesion,
+      nivelAcademico,
+      hijos,
+      contactoEmergencia,
+      telefonoEmergencia,
       fechaIngreso,
       cargoId,
       salario,
-      tipoContrato
+      tipoContrato,
+      banco,
+      tipoCuenta,
+      numeroCuenta
     } = body
 
     if (!nombre || !apellido || !cedula || !fechaIngreso) {
@@ -84,10 +97,23 @@ export async function POST(req: Request) {
           nombre,
           apellido,
           cedula,
+          inss,
+          ruc,
           email,
           telefono,
           direccion,
+          fechaNacimiento: fechaNacimiento ? new Date(fechaNacimiento) : null,
+          genero,
+          estadoCivil,
+          profesion,
+          nivelAcademico,
+          hijos: hijos ? parseInt(hijos) : 0,
+          contactoEmergencia,
+          telefonoEmergencia,
           fechaIngreso: new Date(fechaIngreso),
+          banco,
+          tipoCuenta,
+          numeroCuenta
         }
       })
 

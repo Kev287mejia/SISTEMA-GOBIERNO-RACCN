@@ -22,6 +22,7 @@ import {
 import { formatCurrency } from "@/lib/utils"
 import { Input } from "@/components/ui/input"
 import { InvoiceDetailDialog } from "@/components/accounting/invoice-detail-dialog"
+import { CreateInvoiceDialog } from "@/components/accounting/create-invoice-dialog"
 
 export default function FacturasPage() {
   const [facturas, setFacturas] = useState<any[]>([])
@@ -29,6 +30,7 @@ export default function FacturasPage() {
   const [search, setSearch] = useState("")
   const [selectedInvoice, setSelectedInvoice] = useState<any | null>(null)
   const [isDetailOpen, setIsDetailOpen] = useState(false)
+  const [isCreateOpen, setIsCreateOpen] = useState(false)
 
   const fetchFacturas = async () => {
     setLoading(true)
@@ -99,7 +101,10 @@ export default function FacturasPage() {
             <Button variant="outline" className="gap-2 shadow-sm">
               <Download className="h-4 w-4" /> Exportar
             </Button>
-            <Button className="bg-indigo-600 hover:bg-indigo-700 gap-2 shadow-lg shadow-indigo-200">
+            <Button
+              className="bg-indigo-600 hover:bg-indigo-700 gap-2 shadow-lg shadow-indigo-200"
+              onClick={() => setIsCreateOpen(true)}
+            >
               <Plus className="h-4 w-4" /> Nueva Factura
             </Button>
           </div>
@@ -262,6 +267,12 @@ export default function FacturasPage() {
         invoice={selectedInvoice}
         open={isDetailOpen}
         onOpenChange={setIsDetailOpen}
+      />
+
+      <CreateInvoiceDialog
+        open={isCreateOpen}
+        onOpenChange={setIsCreateOpen}
+        onSuccess={fetchFacturas}
       />
     </DashboardLayout>
   )

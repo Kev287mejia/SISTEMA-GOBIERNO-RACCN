@@ -30,6 +30,7 @@ import Link from "next/link"
 import { formatCurrency } from "@/lib/utils"
 import { Input } from "@/components/ui/input"
 import { AccountingEntryDetailDialog } from "@/components/accounting/accounting-entry-detail-dialog"
+import { AccountingCharts } from "@/components/accounting/accounting-charts"
 import { Checkbox } from "@/components/ui/checkbox"
 import { toast } from "sonner"
 import { Loader2 } from "lucide-react"
@@ -68,6 +69,10 @@ export default function ContabilidadPage() {
     aprobados: 0,
     pendientes: 0
   })
+
+  // Analytics Stats
+  const [analyticsData, setAnalyticsData] = useState({ trendData: [], statusData: [] })
+  const [loadingAnalytics, setLoadingAnalytics] = useState(true)
 
   const [error, setError] = useState<string | null>(null)
 
@@ -172,7 +177,27 @@ export default function ContabilidadPage() {
 
   useEffect(() => {
     fetchEntries()
+    fetchAnalytics()
   }, [])
+
+  const fetchAnalytics = async () => {
+    try {
+      setLoadingAnalytics(true)
+      const res = await fetch("/api/accounting/analytics")
+      if (res.ok) {
+        const data = await res.json()
+        setAnalyticsData(data)
+      } else {
+        const txt = await res.text()
+        setError("Error API Analytics: " + res.status + " - " + txt)
+      }
+    } catch (error) {
+      console.error("Error fetching accounting analytics:", error)
+      setError("Error Gráficos: " + (error as any).message)
+    } finally {
+      setLoadingAnalytics(false)
+    }
+  }
 
   const fetchEntries = async () => {
     try {
@@ -413,6 +438,13 @@ export default function ContabilidadPage() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Analytics Charts */}
+        <AccountingCharts
+          trendData={analyticsData.trendData}
+          statusData={analyticsData.statusData}
+          loading={loadingAnalytics}
+        />
 
         {/* Master List Card */}
         <Card className="border-none shadow-xl bg-white overflow-hidden rounded-2xl">

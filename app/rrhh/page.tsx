@@ -20,6 +20,7 @@ import {
 } from "lucide-react"
 import Link from "next/link"
 import { useState, useEffect } from "react"
+import { HRCharts } from "@/components/rrhh/hr-charts"
 
 export default function RRHHDashboard() {
   const [stats, setStats] = useState({
@@ -37,7 +38,26 @@ export default function RRHHDashboard() {
       cargosDefinidos: 12,
       nominaPendiente: 2
     })
+    fetchAnalytics()
   }, [])
+
+  const [analyticsData, setAnalyticsData] = useState({ distributionData: [], payrollTrend: [] })
+  const [loadingAnalytics, setLoadingAnalytics] = useState(true)
+
+  const fetchAnalytics = async () => {
+    try {
+      setLoadingAnalytics(true)
+      const res = await fetch("/api/rrhh/analytics")
+      if (res.ok) {
+        const data = await res.json()
+        setAnalyticsData(data)
+      }
+    } catch (error) {
+      console.error("Error fetching HR analytics:", error)
+    } finally {
+      setLoadingAnalytics(false)
+    }
+  }
 
   const modules = [
     {
@@ -177,6 +197,15 @@ export default function RRHHDashboard() {
           </Card>
         </div>
 
+
+
+        {/* Analytics Charts */}
+        <HRCharts
+          distributionData={analyticsData.distributionData}
+          payrollTrend={analyticsData.payrollTrend}
+          loading={loadingAnalytics}
+        />
+
         {/* Module Cards */}
         <div className="grid gap-8 md:grid-cols-2">
           {modules.map((module, idx) => (
@@ -261,6 +290,6 @@ export default function RRHHDashboard() {
         )}
 
       </div>
-    </DashboardLayout>
+    </DashboardLayout >
   )
 }

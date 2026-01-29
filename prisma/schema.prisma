@@ -109,6 +109,7 @@ model AccountingEntry {
   centroCosto           String?
   proyecto              String?
   documentoRef          String?
+  evidenciaUrls         String[]                @default([])
   observaciones         String?
   creadoPorId           String
   aprobadoPorId         String?
@@ -256,12 +257,19 @@ model Employee {
   nombre          String
   apellido        String
   cedula          String        @unique
+  inss            String?       @unique
+  ruc             String?       @unique
   email           String?
   telefono        String?
   direccion       String?
   fechaNacimiento DateTime?
   genero          String?
   estadoCivil     String?
+  profesion       String?
+  nivelAcademico  String?
+  hijos           Int?          @default(0)
+  contactoEmergencia String?
+  telefonoEmergencia String?
   fechaIngreso    DateTime
   estado          String        @default("ACTIVO")
   tipoSangre      String?
@@ -500,6 +508,7 @@ model PettyCashMovement {
   fecha             DateTime             @default(now())
   descripcion       String
   referencia        String?
+  evidenciaUrls     String[]             @default([])
   estado            MovementStatus       @default(PENDIENTE_VALIDACION)
   usuarioId         String
   usuario           User                 @relation("PettyCashMovementCreator", fields: [usuarioId], references: [id])
@@ -560,6 +569,7 @@ model CashMovement {
   fecha           DateTime         @default(now())
   descripcion     String
   referencia      String?
+  evidenciaUrls   String[]         @default([])
   institucion     Institution      @default(GOBIERNO)
   usuarioId       String
   usuario         User             @relation(fields: [usuarioId], references: [id])

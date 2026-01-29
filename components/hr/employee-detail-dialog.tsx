@@ -131,43 +131,50 @@ export function EmployeeDetailDialog({ employee, open, onOpenChange }: EmployeeD
 
             <section className="space-y-4">
               <h3 className="text-[11px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
-                <GraduationCap className="h-3.5 w-3.5" /> Datos Personales
+                <GraduationCap className="h-3.5 w-3.5" /> Perfil Académico y Familiar
               </h3>
-              <div className="grid grid-cols-3 gap-4">
-                <div className="bg-gray-50/50 p-4 rounded-xl border border-gray-100">
-                  <p className="text-[9px] font-black text-gray-400 uppercase mb-1">F. Nacimiento</p>
-                  <p className="text-xs font-bold text-gray-700">
-                    {employee.fechaNacimiento ? new Date(employee.fechaNacimiento).toLocaleDateString() : 'N/A'}
-                  </p>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="bg-gray-50/50 p-4 rounded-xl border border-gray-100 col-span-2">
+                  <p className="text-[9px] font-black text-gray-400 uppercase mb-1">Profesión</p>
+                  <p className="text-xs font-bold text-gray-700">{employee.profesion || 'N/A'}</p>
                 </div>
                 <div className="bg-gray-50/50 p-4 rounded-xl border border-gray-100">
-                  <p className="text-[9px] font-black text-gray-400 uppercase mb-1">Género</p>
-                  <p className="text-xs font-bold text-gray-700 capitalize">{employee.genero || 'N/A'}</p>
+                  <p className="text-[9px] font-black text-gray-400 uppercase mb-1">Nivel Académico</p>
+                  <p className="text-xs font-bold text-gray-700">{employee.nivelAcademico || 'N/A'}</p>
                 </div>
                 <div className="bg-gray-50/50 p-4 rounded-xl border border-gray-100">
-                  <p className="text-[9px] font-black text-gray-400 uppercase mb-1">Estado Civil</p>
-                  <p className="text-xs font-bold text-gray-700 capitalize">{employee.estadoCivil || 'N/A'}</p>
+                  <p className="text-[9px] font-black text-gray-400 uppercase mb-1">Hijos</p>
+                  <p className="text-xs font-bold text-gray-700">{employee.hijos ?? 0}</p>
                 </div>
               </div>
             </section>
 
-            <section className="space-y-4">
-              <h3 className="text-[11px] font-black text-emerald-600 uppercase tracking-widest flex items-center gap-2">
-                <HeartPulse className="h-3.5 w-3.5" /> Información de Salud y Emergencia
-              </h3>
-              <div className="p-4 rounded-2xl bg-emerald-50/30 border border-emerald-100 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="h-9 w-9 bg-emerald-100 rounded-lg flex items-center justify-center text-emerald-700">
-                    <HeartPulse className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <p className="text-[9px] font-black text-emerald-700 uppercase">Tipo de Sangre</p>
-                    <p className="text-sm font-black text-gray-800">{employee.tipoSangre || 'O+'}</p>
+            <section className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-4">
+              <div className="space-y-4">
+                <h3 className="text-[11px] font-black text-emerald-600 uppercase tracking-widest flex items-center gap-2">
+                  <HeartPulse className="h-3.5 w-3.5" /> Salud y Cobertura
+                </h3>
+                <div className="p-4 rounded-2xl bg-emerald-50/30 border border-emerald-100 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="h-9 w-9 bg-emerald-100 rounded-lg flex items-center justify-center text-emerald-700 font-black text-xs">
+                      {employee.tipoSangre || 'O+'}
+                    </div>
+                    <div>
+                      <p className="text-[9px] font-black text-emerald-700 uppercase leading-none">Tipo Sangre</p>
+                      <p className="text-[10px] font-medium text-gray-500 mt-1 uppercase">INSS: <span className="font-black text-gray-800">{employee.inss || 'N/D'}</span></p>
+                    </div>
                   </div>
                 </div>
-                <div className="text-right">
-                  <p className="text-[9px] font-black text-gray-400 uppercase">Cobertura Médica</p>
-                  <Badge className="bg-emerald-600 text-[9px] font-black uppercase">Seguro Social</Badge>
+              </div>
+
+              <div className="space-y-4">
+                <h3 className="text-[11px] font-black text-rose-600 uppercase tracking-widest flex items-center gap-2">
+                  <AlertCircle className="h-3.5 w-3.5" /> Contacto de Emergencia
+                </h3>
+                <div className="p-4 rounded-2xl bg-rose-50/30 border border-rose-100">
+                  <p className="text-[9px] font-black text-rose-700 uppercase leading-none">Nombre y Teléfono</p>
+                  <p className="text-xs font-black text-gray-800 mt-1">{employee.contactoEmergencia || 'Sin asignar'}</p>
+                  <p className="text-xs font-bold text-rose-600 mt-0.5">{employee.telefonoEmergencia || '-'}</p>
                 </div>
               </div>
             </section>
