@@ -1,14 +1,14 @@
-import { NextResponse } from "next/server"
-import { getServerSession } from "next-auth"
-import { authOptions } from "@/lib/auth"
+
+import { NextRequest, NextResponse } from "next/server"
+import { getToken } from "next-auth/jwt"
 import { prisma } from "@/lib/prisma"
 import { Role, AuditAction } from "@prisma/client"
-import { emitCajaEvent, CajaEvent } from "@/lib/socket"
+// import { emitCajaEvent, CajaEvent } from "@/lib/socket"
 
-export async function GET(req: Request) {
+export async function GET(req: NextRequest) {
     try {
-        const session = await getServerSession(authOptions)
-        if (!session) return new NextResponse("Unauthorized", { status: 401 })
+        const token = await getToken({ req })
+        if (!token) return new NextResponse("Unauthorized", { status: 401 })
 
         const { searchParams } = new URL(req.url)
         const closureId = searchParams.get("closureId")
@@ -32,25 +32,28 @@ export async function GET(req: Request) {
     }
 }
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
     try {
-        const session = await getServerSession(authOptions)
-        if (!session || (session.user.role !== Role.ResponsableCaja && session.user.role !== Role.Admin)) {
+        const token = await getToken({ req })
+        // Allow Admin and ResponsableCaja
+        const role = token?.role as Role
+        if (!token || (role !== Role.ResponsableCaja && role !== Role.Admin)) {
             return new NextResponse("Unauthorized", { status: 401 })
         }
 
         const body = await req.json()
         const { tipo, monto, descripcion, referencia, institucion } = body
+        const userId = token.sub as string
+        const userName = token.name || "Usuario"
 
         if (!tipo || !monto || !descripcion) {
             return new NextResponse("Missing required fields", { status: 400 })
         }
 
-        // Check for active closure if needed, but the request doesn't explicitly mandate it for movements
-        // However, usually movements should be linked to the current open closure.
+        // Link to active closure if exists
         const activeClosure = await prisma.cashClosure.findFirst({
             where: {
-                usuarioId: session.user.id,
+                usuarioId: userId,
                 estado: "ABIERTO"
             }
         })
@@ -62,7 +65,7 @@ export async function POST(req: Request) {
                 descripcion,
                 referencia,
                 institucion: institucion || "GOBIERNO",
-                usuarioId: session.user.id,
+                usuarioId: userId,
                 closureId: activeClosure?.id
             }
         })
@@ -74,7 +77,7 @@ export async function POST(req: Request) {
             await createNotification({
                 type: tipo === "EGRESO" ? NotificationType.WARNING : NotificationType.SUCCESS,
                 title: `Movimiento de Caja: ${tipo}`,
-                message: `${session.user.name} registró un ${tipo.toLowerCase()} por C$ ${monto.toLocaleString()}`,
+                message: `${userName} registró un ${tipo.toLowerCase()} por C$ ${Number(monto).toLocaleString()}`,
                 link: "/caja",
                 roles: [PrismaRole.Admin, PrismaRole.ContadorGeneral, PrismaRole.ResponsableCaja]
             })
@@ -90,16 +93,20 @@ export async function POST(req: Request) {
                 entidadId: movement.id,
                 descripcion: `Registro de ${tipo} en caja por ${monto}`,
                 datosNuevos: movement as any,
-                usuarioId: session.user.id
+                usuarioId: userId
             }
         })
 
-        // Real-time event
-        emitCajaEvent(CajaEvent.MOVEMENT_CREATED, movement)
+        // Real-time event DISABLED to prevent runtime errors
+        // try {
+        //     const { emitCajaEvent } = await import("@/lib/socket")
+        //     emitCajaEvent("caja:movement-created" as any, movement)
+        // } catch (e) { console.error("Socket emit failed", e) }
 
         return NextResponse.json(movement)
-    } catch (error) {
+    } catch (error: any) {
         console.error("[CAJA_MOVEMENTS_POST]", error)
-        return new NextResponse("Internal Error", { status: 500 })
+        const msg = error.message || "Unknown error"
+        return new NextResponse(`Internal Error: ${msg}`, { status: 500 })
     }
 }

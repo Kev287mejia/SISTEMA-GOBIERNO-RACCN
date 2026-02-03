@@ -1,5 +1,3 @@
-"use client"
-
 import { useState, useEffect } from "react"
 import {
     Table,
@@ -15,11 +13,15 @@ import { es } from "date-fns/locale"
 import { Button } from "@/components/ui/button"
 import { Lock, Unlock, FileBarChart } from "lucide-react"
 import { toast } from "sonner"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { CashOpeningForm } from "./cash-opening-form"
 
 export function ClosuresTable() {
     const [closures, setClosures] = useState([])
     const [loading, setLoading] = useState(true)
     const [activeClosure, setActiveClosure] = useState<any>(null)
+    const [showOpeningDialog, setShowOpeningDialog] = useState(false)
+    const [isSubmitting, setIsSubmitting] = useState(false)
 
     const fetchClosures = async () => {
         try {
@@ -40,18 +42,28 @@ export function ClosuresTable() {
         fetchClosures()
     }, [])
 
-    const handleOpenClosure = async () => {
-        const monto = prompt("Ingrese el monto inicial de caja (C$):", "0")
-        if (monto === null) return
+    const handleOpenClick = () => {
+        setShowOpeningDialog(true)
+    }
 
+    const confirmOpenClosure = async (total: number, details: any) => {
+        setIsSubmitting(true)
         try {
+            // Include details (breakdown) in the body if the API supports it. 
+            // Currently API expects { action: 'open', montoInicial: number }
+            // We'll send the details as well, assuming the API might store them or we'll update API later.
             const res = await fetch("/api/caja/closures", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ action: 'open', montoInicial: Number(monto) })
+                body: JSON.stringify({
+                    action: 'open',
+                    montoInicial: total,
+                    detallesApertura: details // Sending extra data
+                })
             })
             if (res.ok) {
                 toast.success("Caja abierta correctamente")
+                setShowOpeningDialog(false)
                 fetchClosures()
             } else {
                 const err = await res.text()
@@ -59,6 +71,8 @@ export function ClosuresTable() {
             }
         } catch (error) {
             toast.error("Error al abrir caja")
+        } finally {
+            setIsSubmitting(false)
         }
     }
 
@@ -94,7 +108,7 @@ export function ClosuresTable() {
                             Cerrar Caja Actual
                         </Button>
                     ) : (
-                        <Button className="gap-2" onClick={handleOpenClosure}>
+                        <Button className="gap-2 bg-indigo-600 hover:bg-indigo-700 text-white shadow-md shadow-indigo-200" onClick={handleOpenClick}>
                             <Unlock className="h-4 w-4" />
                             Abrir Nueva Caja
                         </Button>
@@ -129,7 +143,7 @@ export function ClosuresTable() {
                             closures.map((c: any) => (
                                 <TableRow key={c.id}>
                                     <TableCell>{format(new Date(c.fechaInicio), "dd/MM/yyyy HH:mm", { locale: es })}</TableCell>
-                                    <TableCell>{c.estado === "CERRADO" ? format(new Date(c.fechaFin), "dd/MM/yyyy HH:mm", { locale: es }) : "-"}</TableCell>
+                                    <TableCell>{c.estado === "CERRADO" && c.fechaFin ? format(new Date(c.fechaFin), "dd/MM/yyyy HH:mm", { locale: es }) : "-"}</TableCell>
                                     <TableCell className="font-mono">{Number(c.montoInicial).toLocaleString('es-NI', { style: 'currency', currency: 'NIO' })}</TableCell>
                                     <TableCell className="font-mono text-green-600">+{Number(c.totalIngresos).toLocaleString('es-NI', { style: 'currency', currency: 'NIO' })}</TableCell>
                                     <TableCell className="font-mono text-red-600">-{Number(c.totalEgresos).toLocaleString('es-NI', { style: 'currency', currency: 'NIO' })}</TableCell>
@@ -151,6 +165,19 @@ export function ClosuresTable() {
                     </TableBody>
                 </Table>
             </div>
+
+            <Dialog open={showOpeningDialog} onOpenChange={setShowOpeningDialog}>
+                <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto">
+                    <DialogHeader>
+                        <DialogTitle>Apertura de Caja - Arqueo Inicial</DialogTitle>
+                    </DialogHeader>
+                    <CashOpeningForm
+                        onConfirm={confirmOpenClosure}
+                        onCancel={() => setShowOpeningDialog(false)}
+                        isLoading={isSubmitting}
+                    />
+                </DialogContent>
+            </Dialog>
         </div>
     )
 }

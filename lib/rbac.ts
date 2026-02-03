@@ -60,6 +60,15 @@ export const routePermissions: Record<string, Role[]> = {
     Role.DirectoraDAF,
     Role.CoordinadorGobierno,
   ],
+  "/api/caja": [
+    Role.Admin,
+    Role.ResponsableCaja,
+    Role.ContadorGeneral,
+    Role.Auditor,
+    Role.ResponsableContabilidad,
+    Role.DirectoraDAF,
+    Role.CoordinadorGobierno,
+  ],
   "/contabilidad": [
     Role.Admin,
     Role.ContadorGeneral,
