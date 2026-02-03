@@ -12,7 +12,7 @@ import {
     SelectValue,
 } from "@/components/ui/select"
 import { toast } from "sonner"
-import { Loader2, DollarSign, Calendar, FileText, Receipt } from "lucide-react"
+import { Loader2, DollarSign, Calendar, FileText, Receipt, Building2 } from "lucide-react"
 
 export function BudgetExecutionForm({
     budgetItemId,
@@ -66,6 +66,7 @@ export function BudgetExecutionForm({
         bankAccountId: "",
         descripcion: "",
         referencia: "",
+        centroCosto: "",
         mes: new Date().getMonth() + 1
     })
 
@@ -80,7 +81,6 @@ export function BudgetExecutionForm({
             return
         }
 
-        // ... rest of submit logic
         setLoading(true)
         try {
             const res = await fetch("/api/budget/execution", {
@@ -89,13 +89,14 @@ export function BudgetExecutionForm({
                 body: JSON.stringify({
                     budgetItemId,
                     monto: parseFloat(formData.monto),
-                    bankAccountId: formData.bankAccountId, // New Field
+                    bankAccountId: formData.bankAccountId,
                     descripcion: formData.descripcion,
                     referencia: formData.referencia,
+                    centroCosto: formData.centroCosto,
                     mes: formData.mes
                 })
             })
-            // ... handling response
+
             if (res.ok) {
                 toast.success("¡Ejecución registrada exitosamente!")
                 onSuccess()
@@ -104,10 +105,10 @@ export function BudgetExecutionForm({
                     bankAccountId: "",
                     descripcion: "",
                     referencia: "",
+                    centroCosto: "",
                     mes: new Date().getMonth() + 1
                 })
             }
-            // ... error handling
         } catch (error) {
             toast.error("Error de conexión")
         } finally {
@@ -239,17 +240,42 @@ export function BudgetExecutionForm({
                 />
             </div>
 
-            <div className="space-y-2">
-                <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
-                    <Receipt className="h-3 w-3" />
-                    Documento de Referencia (Opcional)
-                </Label>
-                <Input
-                    value={formData.referencia}
-                    onChange={(e) => setFormData({ ...formData, referencia: e.target.value })}
-                    placeholder="No. Factura, Orden de compra, Cheque, etc."
-                    className="h-14 px-5 rounded-2xl border-slate-100 bg-slate-50 focus-visible:ring-blue-500 font-medium transition-all"
-                />
+            <div className="grid grid-cols-2 gap-6">
+                <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
+                        <Receipt className="h-3 w-3" />
+                        Documento de Referencia (Opcional)
+                    </Label>
+                    <Input
+                        value={formData.referencia}
+                        onChange={(e) => setFormData({ ...formData, referencia: e.target.value })}
+                        placeholder="No. Factura, Orden, etc."
+                        className="h-14 px-5 rounded-2xl border-slate-100 bg-slate-50 focus-visible:ring-blue-500 font-medium transition-all"
+                    />
+                </div>
+                <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
+                        <Building2 className="h-3 w-3" />
+                        Centro de Costo
+                    </Label>
+                    <Select
+                        value={formData.centroCosto}
+                        onValueChange={(val) => setFormData({ ...formData, centroCosto: val })}
+                    >
+                        <SelectTrigger className="h-14 px-5 rounded-2xl border-slate-100 bg-slate-50 font-bold">
+                            <SelectValue placeholder="Seleccione Unidad" />
+                        </SelectTrigger>
+                        <SelectContent className="rounded-2xl border-none shadow-2xl">
+                            <SelectItem value="ADMINISTRACION">Administración General</SelectItem>
+                            <SelectItem value="RECURSOS_HUMANOS">Recursos Humanos</SelectItem>
+                            <SelectItem value="CONTABILIDAD">Contabilidad y Finanzas</SelectItem>
+                            <SelectItem value="TESORERIA">Tesorería</SelectItem>
+                            <SelectItem value="TECNOLOGIA">Sistemas/Informática</SelectItem>
+                            <SelectItem value="TRANSPORTE">Transporte y Logística</SelectItem>
+                            <SelectItem value="SEGURIDAD">Seguridad y Vigilancia</SelectItem>
+                        </SelectContent>
+                    </Select>
+                </div>
             </div>
 
             <div className="pt-4 border-t border-slate-100">

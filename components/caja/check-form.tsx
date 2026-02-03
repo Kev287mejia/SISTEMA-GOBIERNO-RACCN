@@ -33,21 +33,31 @@ const formSchema = z.object({
     fecha: z.string().min(1, "Fecha es requerida"),
     referencia: z.string().optional(),
     providerId: z.string().optional(),
+    budgetItemId: z.string().optional(),
 })
 
 export function CheckForm({ onSuccess }: { onSuccess: () => void }) {
     const [loading, setLoading] = useState(false)
     const [providers, setProviders] = useState([])
+    const [budgetItems, setBudgetItems] = useState([])
 
     useEffect(() => {
-        const fetchProviders = async () => {
-            const res = await fetch("/api/caja/providers")
-            if (res.ok) {
-                const data = await res.json()
+        const fetchInitialData = async () => {
+            const [providersRes, budgetRes] = await Promise.all([
+                fetch("/api/caja/providers"),
+                fetch("/api/budget/items")
+            ])
+
+            if (providersRes.ok) {
+                const data = await providersRes.json()
                 setProviders(data)
             }
+            if (budgetRes.ok) {
+                const json = await budgetRes.json()
+                setBudgetItems(json.data || [])
+            }
         }
-        fetchProviders()
+        fetchInitialData()
     }, [])
 
     const form = useForm<z.infer<typeof formSchema>>({
@@ -61,6 +71,7 @@ export function CheckForm({ onSuccess }: { onSuccess: () => void }) {
             fecha: new Date().toISOString().split('T')[0],
             referencia: "",
             providerId: "none",
+            budgetItemId: "none",
         },
     })
 
@@ -73,7 +84,8 @@ export function CheckForm({ onSuccess }: { onSuccess: () => void }) {
                 body: JSON.stringify({
                     ...values,
                     monto: Number(values.monto),
-                    providerId: values.providerId === "none" ? undefined : values.providerId
+                    providerId: values.providerId === "none" ? undefined : values.providerId,
+                    budgetItemId: values.budgetItemId === "none" ? undefined : values.budgetItemId
                 }),
             })
 
@@ -160,29 +172,57 @@ export function CheckForm({ onSuccess }: { onSuccess: () => void }) {
                     />
                 </div>
 
-                <FormField
-                    control={form.control}
-                    name="providerId"
-                    render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Proveedor (Si aplica)</FormLabel>
-                            <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                <FormControl>
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Seleccione un proveedor" />
-                                    </SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                    <SelectItem value="none">Ninguno / Pago directo</SelectItem>
-                                    {providers.map((p: any) => (
-                                        <SelectItem key={p.id} value={p.id}>{p.nombre}</SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                            <FormMessage />
-                        </FormItem>
-                    )}
-                />
+                <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                        control={form.control}
+                        name="providerId"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Proveedor (Si aplica)</FormLabel>
+                                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                    <FormControl>
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Seleccione un proveedor" />
+                                        </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                        <SelectItem value="none">Ninguno / Pago directo</SelectItem>
+                                        {providers.map((p: any) => (
+                                            <SelectItem key={p.id} value={p.id}>{p.nombre}</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+
+                    <FormField
+                        control={form.control}
+                        name="budgetItemId"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Partida Presupuestaria</FormLabel>
+                                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                    <FormControl>
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Seleccione partida" />
+                                        </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                        <SelectItem value="none">No presupuestado</SelectItem>
+                                        {budgetItems.map((item: any) => (
+                                            <SelectItem key={item.id} value={item.id}>
+                                                {item.codigo} - {item.nombre}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                </div>
 
                 <FormField
                     control={form.control}

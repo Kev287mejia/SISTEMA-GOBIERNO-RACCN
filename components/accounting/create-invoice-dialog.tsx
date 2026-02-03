@@ -33,7 +33,9 @@ import {
     Briefcase,
     Building2,
     Calendar as CalendarIcon,
-    CreditCard
+    CreditCard,
+    Sparkles,
+    Check
 } from "lucide-react"
 import { toast } from "sonner"
 import { Institution, EntryType } from "@prisma/client"
@@ -51,6 +53,8 @@ export function CreateInvoiceDialog({ open, onOpenChange, onSuccess }: CreateInv
     const [evidenciaUrls, setEvidenciaUrls] = useState<string[]>([])
     const [bankAccounts, setBankAccounts] = useState<any[]>([])
     const [loadingAccounts, setLoadingAccounts] = useState(false)
+    const [suggestion, setSuggestion] = useState<any>(null)
+    const [isThinking, setIsThinking] = useState(false)
 
     const [formData, setFormData] = useState({
         fecha: new Date().toISOString().split('T')[0],
@@ -67,6 +71,39 @@ export function CreateInvoiceDialog({ open, onOpenChange, onSuccess }: CreateInv
             fetchBankAccounts()
         }
     }, [open])
+
+    // Intelligent Assistant logic
+    useEffect(() => {
+        const timer = setTimeout(async () => {
+            if (formData.descripcion.length > 5) {
+                setIsThinking(true)
+                try {
+                    const res = await fetch(`/api/accounting/assistant/suggest?q=${encodeURIComponent(formData.descripcion)}`)
+                    const data = await res.json()
+                    setSuggestion(data.suggestion)
+                } catch (error) {
+                    console.error("Error fetching suggestion:", error)
+                } finally {
+                    setIsThinking(false)
+                }
+            } else {
+                setSuggestion(null)
+            }
+        }, 1000)
+
+        return () => clearTimeout(timer)
+    }, [formData.descripcion])
+
+    const applySuggestion = () => {
+        if (suggestion) {
+            setFormData(prev => ({ ...prev, cuentaContable: suggestion.code }))
+            setSuggestion(null)
+            toast.success("Cuenta contable aplicada automáticamente", {
+                description: `Se seleccionó: ${suggestion.name}`,
+                icon: <Sparkles className="h-4 w-4 text-amber-500" />
+            })
+        }
+    }
 
     const fetchBankAccounts = async () => {
         setLoadingAccounts(true)
@@ -238,6 +275,34 @@ export function CreateInvoiceDialog({ open, onOpenChange, onSuccess }: CreateInv
                                     value={formData.descripcion}
                                     onChange={(e) => setFormData({ ...formData, descripcion: e.target.value })}
                                 />
+
+                                {/* Intelligent Suggestion UI */}
+                                {suggestion && (
+                                    <div
+                                        onClick={applySuggestion}
+                                        className="mt-2 bg-amber-50 border border-amber-100 p-2 rounded-xl flex items-center justify-between cursor-pointer hover:bg-amber-100 transition-all animate-in fade-in slide-in-from-top-1"
+                                    >
+                                        <div className="flex items-center gap-2">
+                                            <div className="bg-amber-500 p-1.5 rounded-lg">
+                                                <Sparkles className="h-3 w-3 text-white" />
+                                            </div>
+                                            <div className="flex flex-col">
+                                                <span className="text-[10px] font-black uppercase text-amber-700 leading-none">Sugerencia Inteligente</span>
+                                                <span className="text-[11px] font-bold text-slate-700">{suggestion.name}</span>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center gap-1.5 text-[10px] font-black text-amber-600 uppercase">
+                                            <span>Aplicar</span>
+                                            <Check className="h-3 w-3" />
+                                        </div>
+                                    </div>
+                                )}
+                                {isThinking && (
+                                    <div className="mt-2 flex items-center gap-2 opacity-50 px-2 animate-pulse">
+                                        <Sparkles className="h-3 w-3 text-indigo-500 animate-spin" />
+                                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Asistente analizando...</span>
+                                    </div>
+                                )}
                             </div>
 
                             <div className="grid grid-cols-2 gap-4">
@@ -312,7 +377,7 @@ export function CreateInvoiceDialog({ open, onOpenChange, onSuccess }: CreateInv
                                 </div>
                                 <div className="text-center">
                                     <p className="font-black text-slate-600 uppercase text-xs tracking-widest">Subir Imagen / PDF</p>
-                                    <p className="text-[10px] text-slate-400 font-bold mt-1">Suelte archivos o haga clic aquí (Max 5MB)</p>
+                                    <p className="text-[10px] text-slate-400 font-bold mt-1">Suelte archivos o haga clic aquí (Max 10MB)</p>
                                 </div>
                                 <input
                                     type="file"

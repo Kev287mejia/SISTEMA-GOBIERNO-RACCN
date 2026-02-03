@@ -1,9 +1,10 @@
-
 import { NextRequest, NextResponse } from "next/server"
-import { writeFile, mkdir } from "fs/promises"
-import { join } from "path"
-import { randomUUID } from "crypto"
+import { StorageService } from "@/lib/storage"
 
+/**
+ * API de Carga de Evidencias
+ * Refactorizada para Object Storage (S3/MinIO) por Analista Senior
+ */
 export async function POST(request: NextRequest) {
     try {
         const formData = await request.formData()
@@ -13,46 +14,36 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: "No se ha subido ningún archivo" }, { status: 400 })
         }
 
+        // Validaciones de Seguridad
+        const validTypes = ["image/jpeg", "image/png", "image/webp", "application/pdf"]
+        if (!validTypes.includes(file.type)) {
+            return NextResponse.json({ error: "Formato no soportado. Requerido: PDF o Imágenes." }, { status: 400 })
+        }
+
+        if (file.size > 10 * 1024 * 1024) { // Aumentado a 10MB para comprobantes pesados
+            return NextResponse.json({ error: "Archivo demasiado grande (Máx 10MB)" }, { status: 400 })
+        }
+
         const bytes = await file.arrayBuffer()
         const buffer = Buffer.from(bytes)
 
-        // Validate file type (basic)
-        const validTypes = ["image/jpeg", "image/png", "image/webp", "application/pdf"]
-        if (!validTypes.includes(file.type)) {
-            return NextResponse.json({ error: "Formato no soportado. Solo PDF y Imágenes (JPG, PNG, WebP)" }, { status: 400 })
-        }
+        // Delegar carga al servicio de almacenamiento unificado
+        const result = await StorageService.uploadFile(buffer, file.name, file.type)
 
-        // Validate size (e.g., 5MB)
-        if (file.size > 5 * 1024 * 1024) {
-            return NextResponse.json({ error: "El archivo excede el límite de 5MB" }, { status: 400 })
-        }
-
-        // Create specific folder for year/month to avoid clutter
-        const date = new Date()
-        const year = date.getFullYear().toString()
-        const month = (date.getMonth() + 1).toString().padStart(2, '0')
-        const relativeDir = `uploads/${year}/${month}`
-        const uploadDir = join(process.cwd(), "public", relativeDir)
-
-        await mkdir(uploadDir, { recursive: true })
-
-        // Generate safe unique filename
-        const ext = file.name.split('.').pop()
-        const filename = `${randomUUID()}.${ext}`
-        const filepath = join(uploadDir, filename)
-
-        await writeFile(filepath, buffer)
-
-        const publicUrl = `/${relativeDir}/${filename}`
+        console.log(`[UPLOAD_SUCCESS] Archivo procesado: ${result.key}`)
 
         return NextResponse.json({
-            url: publicUrl,
+            url: result.url,
             filename: file.name,
-            type: file.type
+            type: file.type,
+            key: result.key
         })
 
     } catch (error) {
-        console.error("Error al subir archivo:", error)
-        return NextResponse.json({ error: "Error interno al procesar el archivo" }, { status: 500 })
+        console.error("[UPLOAD_ERROR] Error crítico en API:", error)
+        return NextResponse.json({
+            error: "Error interno al procesar el archivo",
+            details: error instanceof Error ? error.message : "Desconocido"
+        }, { status: 500 })
     }
 }

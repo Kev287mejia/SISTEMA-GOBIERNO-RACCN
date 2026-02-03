@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { DashboardLayout } from "@/components/layout/dashboard-layout"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -9,13 +9,15 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Loader2, ArrowLeft, Save, Paperclip } from "lucide-react"
+import { Loader2, ArrowLeft, Save, Paperclip, Sparkles, Check } from "lucide-react"
 import { toast } from "sonner"
-import { FileUploader } from "@/components/ui/file-uploader"
+import { EvidenceUploader } from "@/components/accounting/evidence-uploader"
+import { requiresEvidence, canApproveEntry } from "@/lib/evidence-config"
 
 export default function NuevoAsientoPage() {
     const router = useRouter()
     const [loading, setLoading] = useState(false)
+    const [budgetItems, setBudgetItems] = useState<any[]>([])
     const [formData, setFormData] = useState({
         tipo: "INGRESO",
         fecha: new Date().toISOString().split('T')[0],
@@ -27,8 +29,52 @@ export default function NuevoAsientoPage() {
         proyecto: "",
         documentoRef: "",
         observaciones: "",
-        evidenciaUrls: [] as string[]
+        evidenciaUrls: [] as string[],
+        budgetItemId: "",
+        renglonGasto: ""
     })
+
+    const [suggestion, setSuggestion] = useState<any>(null)
+    const [isThinking, setIsThinking] = useState(false)
+
+    useEffect(() => {
+        fetch("/api/budget/items")
+            .then(res => res.json())
+            .then(json => setBudgetItems(json.data || []))
+            .catch(err => console.error("Error fetching budget items:", err))
+    }, [])
+
+    // Intelligent Assistant logic
+    useEffect(() => {
+        const timer = setTimeout(async () => {
+            if (formData.descripcion.length > 3) { // Lowered to 3 for faster feedback
+                setIsThinking(true)
+                try {
+                    const res = await fetch(`/api/accounting/assistant/suggest?q=${encodeURIComponent(formData.descripcion)}`)
+                    const data = await res.json()
+                    setSuggestion(data.suggestion)
+                } catch (error) {
+                    console.error("Error fetching suggestion:", error)
+                } finally {
+                    setIsThinking(false)
+                }
+            } else {
+                setSuggestion(null)
+            }
+        }, 800)
+
+        return () => clearTimeout(timer)
+    }, [formData.descripcion])
+
+    const applySuggestion = () => {
+        if (suggestion) {
+            setFormData(prev => ({ ...prev, cuentaContable: suggestion.code }))
+            setSuggestion(null)
+            toast.success("Cuenta contable sugerida aplicada", {
+                icon: <Sparkles className="h-4 w-4 text-amber-500" />
+            })
+        }
+    }
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
@@ -169,16 +215,44 @@ export default function NuevoAsientoPage() {
                             </div>
 
                             <div className="space-y-2">
-                                <Label htmlFor="descripcion" className="text-xs font-bold uppercase text-gray-500">Descripción de la Operación</Label>
+                                <Label htmlFor="descripcion" className="text-xs font-bold uppercase text-gray-500 tracking-widest">Concepto de Pago / Operación *</Label>
                                 <Textarea
                                     id="descripcion"
                                     name="descripcion"
                                     required
-                                    className="min-h-[100px] bg-gray-50/50 border-gray-200 resize-none"
-                                    placeholder="Detalle el motivo del asiento..."
+                                    className="min-h-[100px] bg-gray-50/50 border-transparent focus:bg-white focus:border-indigo-200 transition-all rounded-xl shadow-inner-sm text-sm"
+                                    placeholder="Ej: Pago de energía eléctrica correspondiente al mes de..."
                                     value={formData.descripcion}
                                     onChange={handleChange}
                                 />
+
+                                {/* Assistant UI */}
+                                {suggestion && (
+                                    <div
+                                        onClick={applySuggestion}
+                                        className="mt-2 bg-amber-50 border border-amber-100 p-2.5 rounded-xl flex items-center justify-between cursor-pointer hover:bg-amber-100 transition-all shadow-sm"
+                                    >
+                                        <div className="flex items-center gap-2">
+                                            <div className="bg-amber-500 p-1.5 rounded-lg">
+                                                <Sparkles className="h-3 w-3 text-white" />
+                                            </div>
+                                            <div className="flex flex-col">
+                                                <span className="text-[10px] font-black uppercase text-amber-700 leading-none tracking-tighter">Asistente de Cuentas</span>
+                                                <span className="text-xs font-bold text-slate-700 mt-0.5">{suggestion.name}</span>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center gap-1.5 text-[10px] font-black text-amber-600 uppercase">
+                                            <span>Auto-Clasificar</span>
+                                            <Check className="h-3 w-3" />
+                                        </div>
+                                    </div>
+                                )}
+                                {isThinking && (
+                                    <div className="mt-2 flex items-center gap-2 opacity-50 px-2">
+                                        <Loader2 className="h-3 w-3 text-indigo-500 animate-spin" />
+                                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Analizando concepto...</span>
+                                    </div>
+                                )}
                             </div>
 
                             <div className="bg-indigo-50/50 p-6 rounded-xl border border-indigo-100 space-y-6">
@@ -216,7 +290,40 @@ export default function NuevoAsientoPage() {
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <div className="space-y-2">
-                                        <Label htmlFor="proyecto" className="text-xs font-bold uppercase text-indigo-900/60">Proyecto</Label>
+                                        <Label htmlFor="budgetItemId" className="text-xs font-bold uppercase text-indigo-900/60">Partida Presupuestaria</Label>
+                                        <Select
+                                            value={formData.budgetItemId}
+                                            onValueChange={(val) => handleSelectChange("budgetItemId", val)}
+                                        >
+                                            <SelectTrigger id="budgetItemId" className="h-11 bg-white border-indigo-100">
+                                                <SelectValue placeholder="Seleccione partida" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="none">Ninguna (Uso de Fondo General)</SelectItem>
+                                                {budgetItems.map(item => (
+                                                    <SelectItem key={item.id} value={item.id}>
+                                                        {item.codigo} - {item.nombre}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="renglonGasto" className="text-xs font-bold uppercase text-indigo-900/60">Renglón de Gasto</Label>
+                                        <Input
+                                            id="renglonGasto"
+                                            name="renglonGasto"
+                                            placeholder="Ej: 211"
+                                            className="h-11 bg-white border-indigo-100 focus:border-indigo-300"
+                                            value={formData.renglonGasto}
+                                            onChange={handleChange}
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div className="space-y-2">
+                                        <Label htmlFor="proyecto" className="text-xs font-bold uppercase text-indigo-900/60">Proyecto / Actividad</Label>
                                         <Input
                                             id="proyecto"
                                             name="proyecto"
@@ -227,7 +334,7 @@ export default function NuevoAsientoPage() {
                                         />
                                     </div>
                                     <div className="space-y-2">
-                                        <Label htmlFor="documentoRef" className="text-xs font-bold uppercase text-indigo-900/60">Doc. Referencia</Label>
+                                        <Label htmlFor="documentoRef" className="text-xs font-bold uppercase text-indigo-900/60">Doc. Referencia / Folio</Label>
                                         <Input
                                             id="documentoRef"
                                             name="documentoRef"
@@ -240,17 +347,26 @@ export default function NuevoAsientoPage() {
                                 </div>
                             </div>
 
-                            <div className="space-y-2">
-                                <Label htmlFor="evidencia" className="text-xs font-bold uppercase text-gray-400 flex items-center gap-2">
-                                    <Paperclip className="h-3.5 w-3.5" /> Soporte Digital (Evidencia)
-                                </Label>
-                                <div className="bg-white p-1 border border-gray-100 rounded-xl">
-                                    <FileUploader
-                                        value={formData.evidenciaUrls}
-                                        onChange={(urls) => setFormData({ ...formData, evidenciaUrls: urls })}
-                                    />
+                            {/* Evidence Information */}
+                            {parseFloat(formData.monto) >= 5000 && (
+                                <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
+                                    <div className="flex items-start gap-3">
+                                        <div className="bg-amber-500 p-2 rounded-lg flex-shrink-0">
+                                            <Paperclip className="h-4 w-4 text-white" />
+                                        </div>
+                                        <div>
+                                            <p className="text-xs font-black uppercase text-amber-900 tracking-widest mb-1">
+                                                Evidencia Documental Requerida
+                                            </p>
+                                            <p className="text-xs text-amber-700 font-medium">
+                                                Este asiento requiere documentos de respaldo (factura, resolución, etc.)
+                                                antes de poder ser aprobado. Podrá adjuntarlos después de guardar el asiento
+                                                haciendo clic en el número de asiento desde el Libro Mayor.
+                                            </p>
+                                        </div>
+                                    </div>
                                 </div>
-                            </div>
+                            )}
 
                             <div className="space-y-2">
                                 <Label htmlFor="observaciones" className="text-xs font-bold uppercase text-gray-400">Observaciones (Internas)</Label>

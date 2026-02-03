@@ -36,6 +36,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import Link from "next/link"
 
 type BudgetItem = {
   id: string
@@ -260,13 +261,14 @@ export default function PresupuestoPage() {
             </div>
 
             <div className="flex flex-wrap items-center gap-4">
-              <Button
-                variant="outline"
-                className="h-14 px-8 rounded-2xl bg-white/5 border-white/10 text-white hover:bg-white/10 hover:border-white/20 backdrop-blur-md transition-all duration-300 font-bold uppercase tracking-widest text-[10px] gap-3"
-                onClick={() => setIsReportOpen(true)}
-              >
-                <FileBarChart className="h-5 w-5 text-emerald-400" /> Generar Documentación Oficial
-              </Button>
+              <Link href="/presupuesto/reportes">
+                <Button
+                  variant="outline"
+                  className="h-14 px-8 rounded-2xl bg-white/5 border-white/10 text-white hover:bg-white/10 hover:border-white/20 backdrop-blur-md transition-all duration-300 font-bold uppercase tracking-widest text-[10px] gap-3"
+                >
+                  <FileBarChart className="h-5 w-5 text-emerald-400" /> Inteligencia y Reportes
+                </Button>
+              </Link>
 
               <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                 <DialogTrigger asChild>

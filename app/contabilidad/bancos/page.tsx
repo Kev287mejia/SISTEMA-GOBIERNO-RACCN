@@ -1,16 +1,19 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
 import { DashboardLayout } from "@/components/layout/dashboard-layout"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Landmark, AlertTriangle, ShieldCheck, EyeOff } from "lucide-react"
+import { Landmark, AlertTriangle, ShieldCheck, EyeOff, TrendingUp, ArrowDownRight, Wallet, Activity } from "lucide-react"
 import Link from "next/link"
+import { formatCurrency } from "@/lib/utils"
 
 import { toast } from "sonner"
 
 export default function CuentasBancariasPage() {
+    const router = useRouter()
     const [accounts, setAccounts] = useState<any[]>([])
     const [loading, setLoading] = useState(true)
 
@@ -55,19 +58,72 @@ export default function CuentasBancariasPage() {
         })
     }
 
+    const totals = accounts.reduce((acc, curr) => ({
+        bankTotal: acc.bankTotal + (curr.bankBalance || 0),
+        floatingTotal: acc.floatingTotal + (curr.floatingWithdrawals || 0),
+        projectedTotal: acc.projectedTotal + (curr.projectedBalance || 0),
+    }), { bankTotal: 0, floatingTotal: 0, projectedTotal: 0 })
+
     return (
         <DashboardLayout>
             <div className="max-w-5xl mx-auto space-y-8 animate-in fade-in duration-700">
                 <div className="flex items-center justify-between">
                     <div>
-                        <h1 className="text-3xl font-black text-slate-900 tracking-tight">Tesorería Institucional</h1>
-                        <p className="text-slate-500 font-medium mt-1">Gestión y control de cuentas bancarias del GRACCNN</p>
-                    </div>
-                    <div className="px-4 py-2 bg-slate-100 rounded-xl border border-slate-200 text-xs font-bold text-slate-600 uppercase tracking-widest flex items-center gap-2">
-                        <ShieldCheck className="h-4 w-4 text-emerald-600" />
-                        Ambiente Seguro
+                        <h1 className="text-4xl font-black text-slate-900 tracking-tight">Tesorería Institucional</h1>
+                        <p className="text-slate-500 font-medium mt-1 flex items-center gap-2">
+                            <Activity className="h-4 w-4 text-indigo-500" />
+                            Control de liquidez real y conciliación bancaria
+                        </p>
                     </div>
                 </div>
+
+                {/* Dashboard de Saldos Proyectados */}
+                {!loading && accounts.length > 0 && (
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <Card className="border-none shadow-xl bg-white overflow-hidden group">
+                            <div className="absolute top-0 left-0 w-1.5 h-full bg-slate-200" />
+                            <CardHeader className="pb-2">
+                                <CardTitle className="text-[10px] font-black uppercase text-slate-400 tracking-widest flex items-center gap-2">
+                                    <Landmark className="h-3 w-3" /> Saldo Total en Bancos
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="text-3xl font-black text-slate-900">{formatCurrency(totals.bankTotal)}</div>
+                                <p className="text-[10px] text-slate-400 mt-2 font-bold uppercase italic">Cifra según extractos conciliados</p>
+                            </CardContent>
+                        </Card>
+
+                        <Card className="border-none shadow-xl bg-white overflow-hidden group">
+                            <div className="absolute top-0 left-0 w-1.5 h-full bg-amber-500" />
+                            <CardHeader className="pb-2">
+                                <CardTitle className="text-[10px] font-black uppercase text-amber-600 tracking-widest flex items-center gap-2">
+                                    <TrendingUp className="h-3 w-3" /> Cheques Flotantes (Por Cobrar)
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="text-3xl font-black text-amber-600">-{formatCurrency(totals.floatingTotal)}</div>
+                                <p className="text-[10px] text-slate-400 mt-2 font-bold uppercase italic">Pagos emitidos pendientes de cobro</p>
+                            </CardContent>
+                        </Card>
+
+                        <Card className="border-none shadow-xl bg-indigo-950 text-white overflow-hidden relative group">
+                            <div className="absolute -right-4 -bottom-4 opacity-10 rotate-12 transition-transform group-hover:scale-110">
+                                <Wallet className="h-32 w-32" />
+                            </div>
+                            <CardHeader className="pb-2">
+                                <CardTitle className="text-[10px] font-black uppercase text-indigo-300 tracking-widest flex items-center gap-2">
+                                    <ShieldCheck className="h-3 w-3" /> Disponibilidad Real Proyectada
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="text-2xl lg:text-3xl font-black text-white tracking-tighter truncate" title={formatCurrency(totals.projectedTotal)}>
+                                    {formatCurrency(totals.projectedTotal)}
+                                </div>
+                                <p className="text-[10px] text-indigo-400 mt-2 font-black uppercase tracking-widest">Saldo neto utilizable</p>
+                            </CardContent>
+                        </Card>
+                    </div>
+                )}
 
                 <div className="grid gap-6">
                     {loading ? (
@@ -84,7 +140,7 @@ export default function CuentasBancariasPage() {
                         </div>
                     ) : (
                         accounts.map((acc) => (
-                            <div key={acc.id} onClick={() => window.location.href = `/contabilidad/bancos/${acc.id}`}>
+                            <div key={acc.id} onClick={() => router.push(`/contabilidad/bancos/${acc.id}`)}>
                                 <Card className="border-none shadow-xl shadow-slate-200/50 overflow-hidden relative group cursor-pointer hover:scale-[1.01] transition-all">
                                     <div className={`absolute top-0 left-0 w-1.5 h-full transition-colors duration-300 ${acc.isActive ? 'bg-emerald-500' : 'bg-slate-300 group-hover:bg-amber-400'}`} />
                                     <div className="p-6 md:p-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
@@ -131,22 +187,37 @@ export default function CuentasBancariasPage() {
                                             ) : (
                                                 <div className="flex flex-col items-end gap-2">
                                                     <div className="text-right">
-                                                        <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Saldo Disponible</p>
-                                                        <p className={`text-lg font-bold ${acc.isActive ? 'text-slate-800' : 'text-slate-300'}`}>
-                                                            {typeof acc.balance === 'number'
-                                                                ? `C$ ${acc.balance.toLocaleString('es-NI', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-                                                                : 'C$ 0.00'
-                                                            }
+                                                        <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Saldo Proyectado (Real)</p>
+                                                        <p className={`text-xl font-black ${acc.isActive ? 'text-indigo-600' : 'text-slate-300'}`}>
+                                                            {formatCurrency(acc.projectedBalance || 0)}
                                                         </p>
-                                                        <p className="text-[10px] font-black uppercase text-emerald-600 tracking-widest flex items-center gap-1 justify-end mt-1">
-                                                            <ShieldCheck className="h-3 w-3" /> Cuenta Operativa
-                                                        </p>
+                                                        <div className="flex flex-col items-end mt-1 text-[9px] font-bold uppercase tracking-tighter">
+                                                            <div className="flex items-center gap-1 text-slate-400">
+                                                                <span>Banco:</span>
+                                                                <span className="text-slate-600">{formatCurrency(acc.bankBalance || 0)}</span>
+                                                            </div>
+                                                            <div className="flex items-center gap-1 text-amber-500">
+                                                                <span>Flotante:</span>
+                                                                <span>-{formatCurrency(acc.floatingWithdrawals || 0)}</span>
+                                                            </div>
+                                                        </div>
                                                     </div>
-                                                    <div onClick={(e) => e.stopPropagation()}>
+                                                    <div className="flex gap-2">
                                                         <Button
                                                             variant="outline"
                                                             size="sm"
-                                                            className="text-red-500 hover:text-red-600 hover:bg-red-50 border-red-100 h-8 text-xs font-bold uppercase tracking-wide"
+                                                            className="text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 border-indigo-100 h-8 text-[10px] font-black uppercase tracking-wide px-3 rounded-lg"
+                                                            onClick={(e) => {
+                                                                e.stopPropagation()
+                                                                router.push(`/contabilidad/bancos/${acc.id}/reconciliation`)
+                                                            }}
+                                                        >
+                                                            Auto-Conciliación
+                                                        </Button>
+                                                        <Button
+                                                            variant="outline"
+                                                            size="sm"
+                                                            className="text-red-400 hover:text-red-600 hover:bg-red-50 border-red-50 h-8 text-[10px] font-bold uppercase tracking-wide px-2 rounded-lg"
                                                             onClick={(e) => {
                                                                 e.stopPropagation()
                                                                 handleAction(acc.id, "DEACTIVATE")

@@ -41,34 +41,73 @@ export async function GET() {
 
         // Convert keys if necessary from raw result or just return as is
         // Enrich with Balance Calculation
-        const augmentedAccounts = await Promise.all(accounts.map(async (acc: any) => { // Added `any` type for `acc` to handle raw query results
-            // Safe access to ID or calculate totals
-            // For efficiency, we ideally should group by all, but inside loop is safer for now with low volume
-            // Let's use aggregate for this specific account number
+        const augmentedAccounts = await Promise.all(accounts.map(async (acc: any) => {
+            // Aggregates for ALL checks (Book Balance)
             const aggregates = await prisma.check.groupBy({
                 by: ['tipo'],
                 where: {
                     cuentaBancaria: acc.accountNumber,
-                    estado: { not: 'ANULADO' } // Ignore voided checks
+                    estado: { not: 'ANULADO' }
                 },
-                _sum: {
-                    monto: true
-                }
+                _sum: { monto: true }
             })
 
-            let income = 0
-            let expense = 0
+            // Aggregates for CONCILIADO checks only (Bank Balance)
+            const reconciledAggs = await prisma.check.groupBy({
+                by: ['tipo'],
+                where: {
+                    cuentaBancaria: acc.accountNumber,
+                    estado: { not: 'ANULADO' },
+                    conciliado: true
+                },
+                _sum: { monto: true }
+            })
+
+            // Aggregates for FLOATING (Not reconciled)
+            const floatingAggs = await prisma.check.groupBy({
+                by: ['tipo'],
+                where: {
+                    cuentaBancaria: acc.accountNumber,
+                    estado: { not: 'ANULADO' },
+                    conciliado: false
+                },
+                _sum: { monto: true }
+            })
+
+            let totalIncome = 0; let totalExpense = 0
+            let reconciledIncome = 0; let reconciledExpense = 0
+            let floatingIncome = 0; let floatingExpense = 0
 
             aggregates.forEach(agg => {
-                if (agg.tipo === "RECIBIDO") income = Number(agg._sum.monto || 0)
-                if (agg.tipo === "EMITIDO") expense = Number(agg._sum.monto || 0)
+                const val = Number(agg._sum.monto || 0);
+                if (agg.tipo === "RECIBIDO") totalIncome = val;
+                if (agg.tipo === "EMITIDO") totalExpense = val;
             })
 
-            const currentBalance = Number(acc.openingBalance || 0) + income - expense
+            reconciledAggs.forEach(agg => {
+                const val = Number(agg._sum.monto || 0);
+                if (agg.tipo === "RECIBIDO") reconciledIncome = val;
+                if (agg.tipo === "EMITIDO") reconciledExpense = val;
+            })
+
+            floatingAggs.forEach(agg => {
+                const val = Number(agg._sum.monto || 0);
+                if (agg.tipo === "RECIBIDO") floatingIncome = val;
+                if (agg.tipo === "EMITIDO") floatingExpense = val;
+            })
+
+            const openingBalance = Number(acc.openingBalance || 0)
+            const currentBookBalance = openingBalance + totalIncome - totalExpense
+            const currentBankBalance = openingBalance + reconciledIncome - reconciledExpense
 
             return {
                 ...acc,
-                balance: currentBalance
+                balance: currentBookBalance, // Keeping for backward compatibility
+                bookBalance: currentBookBalance,
+                bankBalance: currentBankBalance,
+                floatingWithdrawals: floatingExpense,
+                floatingDeposits: floatingIncome,
+                projectedBalance: currentBankBalance - floatingExpense // This is what the user wants to see: Banco - Lo que va a salir
             }
         }))
 

@@ -3,6 +3,7 @@ import { EntryType, EntryStatus, Institution } from "@prisma/client"
 import { getServerSession } from "next-auth"
 import { authOptions } from "./auth"
 import { auditCreate, auditUpdate, auditDelete } from "./audit"
+import { validatePeriodOrThrow } from "./security/closures"
 
 // Import Socket.IO functions (using dynamic require for CommonJS compatibility)
 function getSocketIO() {
@@ -73,12 +74,17 @@ export async function createAccountingEntry(data: {
   documentoRef?: string
   observaciones?: string
   evidenciaUrls?: string[]
+  budgetItemId?: string
+  renglonGasto?: string
 }) {
   const session = await getServerSession(authOptions)
 
   if (!session?.user?.id) {
     throw new Error("Usuario no autenticado")
   }
+
+  // Check if period is closed
+  await validatePeriodOrThrow(data.fecha)
 
   return await prisma.$transaction(async (tx) => {
     const numero = await getNextEntryNumber(data.institucion)
@@ -147,6 +153,8 @@ export async function updateAccountingEntry(
     documentoRef?: string
     observaciones?: string
     evidenciaUrls?: string[]
+    budgetItemId?: string
+    renglonGasto?: string
   }
 ) {
   const session = await getServerSession(authOptions)
@@ -179,6 +187,7 @@ export async function updateAccountingEntry(
     }
 
     const updated = await tx.accountingEntry.update({
+      // ... existing update code ...
       where: { id },
       data: {
         ...data,
@@ -203,6 +212,10 @@ export async function updateAccountingEntry(
         },
       },
     })
+
+    // Security Audit Analyze (Unusual Operations Detection on Edit)
+    const { SecurityAudit } = await import("./security/audit")
+    await SecurityAudit.analyzeEntry(updated, session.user.id, session.user.name || "Usuario")
 
     await auditUpdate(
       "AccountingEntry",
@@ -305,6 +318,9 @@ export async function approveAccountingEntry(entryId: string) {
     if (!entry) {
       throw new Error("Asiento contable no encontrado")
     }
+
+    // Check if period is closed
+    await validatePeriodOrThrow(entry.fecha)
 
     if (entry.deletedAt) {
       throw new Error("No se puede aprobar un asiento eliminado")

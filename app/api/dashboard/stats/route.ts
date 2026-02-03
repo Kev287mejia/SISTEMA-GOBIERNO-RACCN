@@ -30,12 +30,39 @@ export async function GET(request: Request) {
         const totalDisponible = budgetItems.reduce((sum, item) => sum + Number(item.montoDisponible), 0)
         const porcentajeEjecucion = totalPresupuesto > 0 ? (totalEjecutado / totalPresupuesto) * 100 : 0
 
-        // Fetch bank accounts
+        // Fetch bank accounts and calculate REAL projected liquidity
         const bankAccounts = await prisma.bankAccount.findMany({
             where: { isActive: true }
         })
 
-        const totalBanco = bankAccounts.reduce((sum, acc) => sum + Number(acc.currentBalance), 0)
+        const accountProjections = await Promise.all(bankAccounts.map(async (acc) => {
+            const checksAgg = await prisma.check.groupBy({
+                by: ['tipo', 'conciliado'],
+                where: {
+                    cuentaBancaria: acc.accountNumber,
+                    estado: { not: 'ANULADO' }
+                },
+                _sum: { monto: true }
+            })
+
+            let reconciledIncome = 0; let reconciledExpense = 0
+            let floatingExpense = 0
+
+            checksAgg.forEach(agg => {
+                const val = Number(agg._sum.monto || 0)
+                if (agg.conciliado) {
+                    if (agg.tipo === "RECIBIDO") reconciledIncome = val
+                    if (agg.tipo === "EMITIDO") reconciledExpense = val
+                } else {
+                    if (agg.tipo === "EMITIDO") floatingExpense = val
+                }
+            })
+
+            const bankBalance = Number(acc.openingBalance || 0) + reconciledIncome - reconciledExpense
+            return bankBalance - floatingExpense // Projected Real Balance
+        }))
+
+        const totalBanco = accountProjections.reduce((sum, projected) => sum + projected, 0)
 
         // Budget by type
         const presupuestoPorTipo = budgetItems.reduce((acc, item) => {

@@ -45,6 +45,8 @@ import {
 } from "lucide-react"
 import { formatDistanceToNow } from "date-fns"
 import { es } from "date-fns/locale"
+import { AuditDashboard } from "@/components/audit/audit-dashboard"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 interface AuditLog {
     id: string
@@ -258,255 +260,201 @@ export default function AuditoriaPage() {
                     </div>
                 </div>
 
-                {/* Stats Cards */}
-                <div className="grid gap-6 md:grid-cols-4">
-                    <Card className="border-none shadow-xl">
-                        <CardHeader className="pb-2">
-                            <CardTitle className="text-sm font-black uppercase tracking-widest text-slate-400">Total Registros</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-3xl font-black text-slate-900">{totalCount.toLocaleString()}</div>
-                            <p className="text-xs text-slate-500 mt-1">En el período seleccionado</p>
-                        </CardContent>
-                    </Card>
+                <Tabs defaultValue="dashboard" className="space-y-8">
+                    <TabsList className="bg-slate-100/50 p-1 rounded-2xl border border-slate-200">
+                        <TabsTrigger value="dashboard" className="rounded-xl px-8 data-[state=active]:bg-white data-[state=active]:shadow-sm font-bold text-xs">RESUMEN EJECUTIVO</TabsTrigger>
+                        <TabsTrigger value="timeline" className="rounded-xl px-8 data-[state=active]:bg-white data-[state=active]:shadow-sm font-bold text-xs">LÍNEA DE TIEMPO</TabsTrigger>
+                        <TabsTrigger value="filters" className="rounded-xl px-8 data-[state=active]:bg-white data-[state=active]:shadow-sm font-bold text-xs">BÚSQUEDA AVANZADA</TabsTrigger>
+                    </TabsList>
 
-                    {/* Quick Access to Monthly Archives */}
-                    <Card className="border-none shadow-xl bg-indigo-900 text-white col-span-1 md:col-span-1 cursor-pointer hover:bg-indigo-800 transition-colors group relative overflow-hidden">
-                        <div className="absolute top-0 right-0 p-4 opacity-10">
-                            <Calendar className="h-24 w-24 text-white rotate-12" />
-                        </div>
-                        <CardHeader className="pb-2 relative z-10">
-                            <CardTitle className="text-sm font-black uppercase tracking-widest text-indigo-200">Expedientes Históricos</CardTitle>
-                        </CardHeader>
-                        <CardContent className="relative z-10">
-                            <div className="space-y-2">
-                                {[0, 1, 2].map(offset => {
-                                    const d = new Date()
-                                    d.setMonth(d.getMonth() - offset)
-                                    const monthName = d.toLocaleDateString('es-NI', { month: 'long', year: 'numeric' })
-                                    const startOfMonth = new Date(d.getFullYear(), d.getMonth(), 1).toISOString().split('T')[0]
-                                    const endOfMonth = new Date(d.getFullYear(), d.getMonth() + 1, 0).toISOString().split('T')[0]
+                    <TabsContent value="dashboard" className="space-y-8 animate-in fade-in duration-500">
+                        <AuditDashboard />
+                    </TabsContent>
 
-                                    return (
-                                        <div
-                                            key={offset}
-                                            onClick={() => {
-                                                const newFilters = { ...filters, startDate: startOfMonth, endDate: endOfMonth, limit: '1000' }
-                                                setFilters(newFilters)
-                                                fetchLogs(newFilters)
-                                            }}
-                                            className="flex items-center justify-between text-xs font-bold hover:bg-white/10 p-2 rounded cursor-pointer transition-colors border border-white/5 group-hover:bg-white/5"
-                                        >
-                                            <span className="capitalize">{monthName}</span>
-                                            <Download className="h-3 w-3 opacity-50" />
-                                        </div>
-                                    )
-                                })}
+                    <TabsContent value="timeline" className="animate-in fade-in duration-500">
+                        {/* Timeline View */}
+                        <div className="bg-white rounded-[2rem] shadow-xl border border-slate-100 p-8">
+                            <div className="mb-8">
+                                <div>
+                                    <h2 className="text-2xl font-black tracking-tight text-slate-900">Actividad Reciente</h2>
+                                    <p className="text-slate-500">Historial cronológico detallado de las últimas operaciones</p>
+                                </div>
                             </div>
-                        </CardContent>
-                    </Card>
 
-                    {stats.slice(0, 3).map((stat, idx) => (
-                        <Card key={idx} className="border-none shadow-xl">
-                            <CardHeader className="pb-2">
-                                <CardTitle className="text-sm font-black uppercase tracking-widest text-slate-400">
-                                    {stat.accion === 'CREATE' ? 'CREAR' :
-                                        stat.accion === 'UPDATE' ? 'ACTUALIZAR' :
-                                            stat.accion === 'DELETE' ? 'ELIMINAR' :
-                                                stat.accion === 'LOGIN' ? 'INICIO DE SESIÓN' :
-                                                    stat.accion === 'LOGOUT' ? 'CIERRE DE SESIÓN' : stat.accion}
-                                </CardTitle>
+                            {loading ? (
+                                <div className="flex flex-col items-center justify-center py-24 space-y-4">
+                                    <Loader2 className="h-12 w-12 animate-spin text-indigo-600" />
+                                    <p className="text-sm font-medium text-slate-500 animate-pulse">Cargando registros...</p>
+                                </div>
+                            ) : logs.length === 0 ? (
+                                <div className="flex flex-col items-center justify-center py-24 text-center">
+                                    <div className="h-24 w-24 bg-slate-50 rounded-full flex items-center justify-center mb-4">
+                                        <FileText className="h-12 w-12 text-slate-300" />
+                                    </div>
+                                    <h3 className="text-lg font-bold text-slate-900">Sin Registros</h3>
+                                    <p className="text-slate-500 max-w-sm mt-1">No se encontraron actividades de auditoría con los filtros seleccionados.</p>
+                                </div>
+                            ) : (
+                                <div className="relative pl-8 border-l-2 border-indigo-100 space-y-12 py-4">
+                                    {logs.map((log, index) => {
+                                        return (
+                                            <div key={log.id} className="relative group animate-in slide-in-from-bottom-4 duration-500" style={{ animationDelay: `${index * 50}ms` }}>
+                                                {/* Timestamp Dot */}
+                                                <div className={`absolute -left-[41px] top-0 h-5 w-5 rounded-full border-4 border-white shadow-md ${getActionColor(log.accion).replace('bg-', 'bg-').split(' ')[0]}`} />
+
+                                                <div className="flex flex-col md:flex-row md:items-start gap-6">
+                                                    {/* Time Column */}
+                                                    <div className="md:w-48 flex-shrink-0 pt-0.5">
+                                                        <p className="text-sm font-bold text-slate-900">
+                                                            {new Date(log.fecha).toLocaleDateString('es-NI', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                                        </p>
+                                                        <p className="text-xs font-medium text-slate-500">
+                                                            {new Date(log.fecha).toLocaleTimeString('es-NI', { hour: '2-digit', minute: '2-digit' })}
+                                                        </p>
+                                                        <p className="text-[10px] text-indigo-400 font-medium mt-1">
+                                                            {formatDistanceToNow(new Date(log.fecha), { addSuffix: true, locale: es })}
+                                                        </p>
+                                                    </div>
+
+                                                    {/* Card Content */}
+                                                    <div className="flex-1 bg-slate-50/50 hover:bg-white border boundary-slate-200 hover:border-indigo-200 hover:shadow-lg transition-all p-5 rounded-2xl group-hover:-translate-y-1 duration-300">
+                                                        <div className="flex items-start justify-between mb-4">
+                                                            <div className="flex items-center gap-3">
+                                                                <div className="h-10 w-10 rounded-full bg-white shadow-sm flex items-center justify-center border border-slate-100 text-slate-700 font-bold">
+                                                                    {log.usuario.nombre.charAt(0)}
+                                                                </div>
+                                                                <div>
+                                                                    <p className="text-sm font-bold text-slate-900 leading-none mb-1">
+                                                                        {log.usuario.nombre} {log.usuario.apellido}
+                                                                    </p>
+                                                                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                                                                        {log.usuario.role}
+                                                                    </p>
+                                                                </div>
+                                                            </div>
+                                                            <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border ${getActionColor(log.accion).replace('bg-', 'bg-opacity-10 border-')}`}>
+                                                                {log.accion === 'CREATE' ? 'CREAR' :
+                                                                    log.accion === 'UPDATE' ? 'ACTUALIZAR' :
+                                                                        log.accion === 'DELETE' ? 'ELIMINAR' : log.accion}
+                                                            </span>
+                                                        </div>
+
+                                                        <div className="space-y-3">
+                                                            <div className="flex items-center gap-2 text-sm text-slate-700">
+                                                                <Activity className="h-4 w-4 text-indigo-500" />
+                                                                <span className="font-medium">
+                                                                    {ENTITY_MAP[log.entidad] || log.entidad}
+                                                                    {log.entidadId && <span className="text-slate-400 font-mono text-xs ml-2">ID: {log.entidadId.slice(0, 8)}...</span>}
+                                                                </span>
+                                                            </div>
+
+                                                            {/* Smart Details View */}
+                                                            <ChangeViewer log={log} />
+
+                                                            <div className="flex items-center gap-4 mt-4 pt-4 border-t border-slate-100">
+                                                                <div className="flex items-center gap-2 text-xs text-slate-400">
+                                                                    <Shield className="h-3 w-3" />
+                                                                    IP: {log.ipAddress || 'Desconocida'}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )
+                                    })}
+                                </div>
+                            )}
+                        </div>
+                    </TabsContent>
+
+                    <TabsContent value="filters" className="space-y-8 animate-in fade-in duration-500">
+                        {/* Filters */}
+                        <Card className="border-none shadow-xl bg-white/50 backdrop-blur-sm">
+                            <CardHeader>
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <CardTitle className="text-xl font-black uppercase tracking-tight text-slate-900">Búsqueda Técnica</CardTitle>
+                                        <CardDescription>Consulte la base de datos de auditoría usando criterios específicos</CardDescription>
+                                    </div>
+                                    <Button onClick={handleExportClick} variant="outline" className="gap-2 border-slate-200">
+                                        <Download className="h-4 w-4" />
+                                        Previsualizar y Exportar
+                                    </Button>
+                                </div>
                             </CardHeader>
-                            <CardContent>
-                                <div className="text-3xl font-black text-slate-900">{stat.count}</div>
-                                <p className="text-xs text-slate-500 mt-1">Registros en Periodo</p>
+                            <CardContent className="pt-6">
+                                <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+                                    <div className="space-y-2">
+                                        <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Entidad</Label>
+                                        <Select value={filters.entidad} onValueChange={(v) => setFilters({ ...filters, entidad: v })}>
+                                            <SelectTrigger className="h-12 rounded-xl bg-white border-slate-200">
+                                                <SelectValue placeholder="Todas" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="ALL">Todas</SelectItem>
+                                                <SelectItem value="BudgetItem">Partidas Presupuestarias</SelectItem>
+                                                <SelectItem value="BudgetExecution">Ejecución Presupuestaria</SelectItem>
+                                                <SelectItem value="AccountingEntry">Asientos Contables</SelectItem>
+                                                <SelectItem value="BankAccount">Cuentas Bancarias</SelectItem>
+                                                <SelectItem value="Check">Cheques</SelectItem>
+                                                <SelectItem value="CashMovement">Movimientos de Caja</SelectItem>
+                                                <SelectItem value="User">Usuarios del Sistema</SelectItem>
+                                                <SelectItem value="Institution">Instituciones</SelectItem>
+                                                <SelectItem value="Provider">Proveedores</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Acción</Label>
+                                        <Select value={filters.accion} onValueChange={(v) => setFilters({ ...filters, accion: v })}>
+                                            <SelectTrigger className="h-12 rounded-xl bg-white border-slate-200">
+                                                <SelectValue placeholder="Todas" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="ALL">Todas</SelectItem>
+                                                <SelectItem value="CREATE">Crear</SelectItem>
+                                                <SelectItem value="UPDATE">Actualizar</SelectItem>
+                                                <SelectItem value="DELETE">Eliminar</SelectItem>
+                                                <SelectItem value="LOGIN">Login</SelectItem>
+                                                <SelectItem value="LOGOUT">Logout</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Fecha Inicio</Label>
+                                        <Input
+                                            type="date"
+                                            value={filters.startDate}
+                                            onChange={(e) => setFilters({ ...filters, startDate: e.target.value })}
+                                            className="h-12 rounded-xl bg-white border-slate-200"
+                                        />
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Fecha Fin</Label>
+                                        <Input
+                                            type="date"
+                                            value={filters.endDate}
+                                            onChange={(e) => setFilters({ ...filters, endDate: e.target.value })}
+                                            className="h-12 rounded-xl bg-white border-slate-200"
+                                        />
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">&nbsp;</Label>
+                                        <Button onClick={() => fetchLogs()} className="w-full h-12 rounded-xl font-black uppercase text-[10px] tracking-widest bg-slate-900 hover:bg-slate-800 text-white shadow-lg shadow-slate-900/20">
+                                            <Search className="mr-2 h-4 w-4" />
+                                            Buscar
+                                        </Button>
+                                    </div>
+                                </div>
                             </CardContent>
                         </Card>
-                    ))}
-                </div>
-
-                {/* Filters */}
-                <Card className="border-none shadow-xl bg-white/50 backdrop-blur-sm">
-                    <CardHeader>
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <CardTitle className="text-xl font-black uppercase tracking-tight text-slate-900">Filtros de Búsqueda</CardTitle>
-                                <CardDescription>Personalice los criterios para visualizar registros específicos</CardDescription>
-                            </div>
-                            <Button onClick={handleExportClick} variant="outline" className="gap-2 border-slate-200">
-                                <Download className="h-4 w-4" />
-                                Previsualizar y Exportar
-                            </Button>
-                        </div>
-                    </CardHeader>
-                    <CardContent className="pt-6">
-                        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-                            <div className="space-y-2">
-                                <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Entidad</Label>
-                                <Select value={filters.entidad} onValueChange={(v) => setFilters({ ...filters, entidad: v })}>
-                                    <SelectTrigger className="h-12 rounded-xl bg-white border-slate-200">
-                                        <SelectValue placeholder="Todas" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="ALL">Todas</SelectItem>
-                                        <SelectItem value="BudgetItem">Partidas Presupuestarias</SelectItem>
-                                        <SelectItem value="BudgetExecution">Ejecución Presupuestaria</SelectItem>
-                                        <SelectItem value="AccountingEntry">Asientos Contables</SelectItem>
-                                        <SelectItem value="BankAccount">Cuentas Bancarias</SelectItem>
-                                        <SelectItem value="Check">Cheques</SelectItem>
-                                        <SelectItem value="CashMovement">Movimientos de Caja</SelectItem>
-                                        <SelectItem value="User">Usuarios del Sistema</SelectItem>
-                                        <SelectItem value="Institution">Instituciones</SelectItem>
-                                        <SelectItem value="Provider">Proveedores</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-
-                            <div className="space-y-2">
-                                <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Acción</Label>
-                                <Select value={filters.accion} onValueChange={(v) => setFilters({ ...filters, accion: v })}>
-                                    <SelectTrigger className="h-12 rounded-xl bg-white border-slate-200">
-                                        <SelectValue placeholder="Todas" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="ALL">Todas</SelectItem>
-                                        <SelectItem value="CREATE">Crear</SelectItem>
-                                        <SelectItem value="UPDATE">Actualizar</SelectItem>
-                                        <SelectItem value="DELETE">Eliminar</SelectItem>
-                                        <SelectItem value="LOGIN">Login</SelectItem>
-                                        <SelectItem value="LOGOUT">Logout</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-
-                            <div className="space-y-2">
-                                <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Fecha Inicio</Label>
-                                <Input
-                                    type="date"
-                                    value={filters.startDate}
-                                    onChange={(e) => setFilters({ ...filters, startDate: e.target.value })}
-                                    className="h-12 rounded-xl bg-white border-slate-200"
-                                />
-                            </div>
-
-                            <div className="space-y-2">
-                                <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Fecha Fin</Label>
-                                <Input
-                                    type="date"
-                                    value={filters.endDate}
-                                    onChange={(e) => setFilters({ ...filters, endDate: e.target.value })}
-                                    className="h-12 rounded-xl bg-white border-slate-200"
-                                />
-                            </div>
-
-                            <div className="space-y-2">
-                                <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">&nbsp;</Label>
-                                <Button onClick={() => fetchLogs()} className="w-full h-12 rounded-xl font-black uppercase text-[10px] tracking-widest bg-slate-900 hover:bg-slate-800 text-white shadow-lg shadow-slate-900/20">
-                                    <Search className="mr-2 h-4 w-4" />
-                                    Buscar
-                                </Button>
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
-
-                {/* Timeline View */}
-                <div className="bg-white rounded-[2rem] shadow-xl border border-slate-100 p-8">
-                    <div className="mb-8">
-                        <div>
-                            <h2 className="text-2xl font-black tracking-tight text-slate-900">Línea de Tiempo</h2>
-                            <p className="text-slate-500">Historial cronológico detallado</p>
-                        </div>
-                    </div>
-
-                    {loading ? (
-                        <div className="flex flex-col items-center justify-center py-24 space-y-4">
-                            <Loader2 className="h-12 w-12 animate-spin text-indigo-600" />
-                            <p className="text-sm font-medium text-slate-500 animate-pulse">Cargando registros...</p>
-                        </div>
-                    ) : logs.length === 0 ? (
-                        <div className="flex flex-col items-center justify-center py-24 text-center">
-                            <div className="h-24 w-24 bg-slate-50 rounded-full flex items-center justify-center mb-4">
-                                <FileText className="h-12 w-12 text-slate-300" />
-                            </div>
-                            <h3 className="text-lg font-bold text-slate-900">Sin Registros</h3>
-                            <p className="text-slate-500 max-w-sm mt-1">No se encontraron actividades de auditoría con los filtros seleccionados.</p>
-                        </div>
-                    ) : (
-                        <div className="relative pl-8 border-l-2 border-indigo-100 space-y-12 py-4">
-                            {logs.map((log, index) => {
-                                const isDetailsJson = log.detalles && log.detalles.startsWith('{');
-                                const detailsObj = isDetailsJson ? JSON.parse(log.detalles || '{}') : null;
-
-                                return (
-                                    <div key={log.id} className="relative group animate-in slide-in-from-bottom-4 duration-500" style={{ animationDelay: `${index * 50}ms` }}>
-                                        {/* Timestamp Dot */}
-                                        <div className={`absolute -left-[41px] top-0 h-5 w-5 rounded-full border-4 border-white shadow-md ${getActionColor(log.accion).replace('bg-', 'bg-').split(' ')[0]}`} />
-
-                                        <div className="flex flex-col md:flex-row md:items-start gap-6">
-                                            {/* Time Column */}
-                                            <div className="md:w-48 flex-shrink-0 pt-0.5">
-                                                <p className="text-sm font-bold text-slate-900">
-                                                    {new Date(log.fecha).toLocaleDateString('es-NI', { month: 'short', day: 'numeric', year: 'numeric' })}
-                                                </p>
-                                                <p className="text-xs font-medium text-slate-500">
-                                                    {new Date(log.fecha).toLocaleTimeString('es-NI', { hour: '2-digit', minute: '2-digit' })}
-                                                </p>
-                                                <p className="text-[10px] text-indigo-400 font-medium mt-1">
-                                                    {formatDistanceToNow(new Date(log.fecha), { addSuffix: true, locale: es })}
-                                                </p>
-                                            </div>
-
-                                            {/* Card Content */}
-                                            <div className="flex-1 bg-slate-50/50 hover:bg-white border boundary-slate-200 hover:border-indigo-200 hover:shadow-lg transition-all p-5 rounded-2xl group-hover:-translate-y-1 duration-300">
-                                                <div className="flex items-start justify-between mb-4">
-                                                    <div className="flex items-center gap-3">
-                                                        <div className="h-10 w-10 rounded-full bg-white shadow-sm flex items-center justify-center border border-slate-100 text-slate-700 font-bold">
-                                                            {log.usuario.nombre.charAt(0)}
-                                                        </div>
-                                                        <div>
-                                                            <p className="text-sm font-bold text-slate-900 leading-none mb-1">
-                                                                {log.usuario.nombre} {log.usuario.apellido}
-                                                            </p>
-                                                            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                                                                {log.usuario.role}
-                                                            </p>
-                                                        </div>
-                                                    </div>
-                                                    <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border ${getActionColor(log.accion).replace('bg-', 'bg-opacity-10 border-')}`}>
-                                                        {log.accion === 'CREATE' ? 'CREAR' :
-                                                            log.accion === 'UPDATE' ? 'ACTUALIZAR' :
-                                                                log.accion === 'DELETE' ? 'ELIMINAR' : log.accion}
-                                                    </span>
-                                                </div>
-
-                                                <div className="space-y-3">
-                                                    <div className="flex items-center gap-2 text-sm text-slate-700">
-                                                        <Activity className="h-4 w-4 text-indigo-500" />
-                                                        <span className="font-medium">
-                                                            {ENTITY_MAP[log.entidad] || log.entidad}
-                                                            {log.entidadId && <span className="text-slate-400 font-mono text-xs ml-2">ID: {log.entidadId.slice(0, 8)}...</span>}
-                                                        </span>
-                                                    </div>
-
-                                                    {/* Smart Details View */}
-                                                    <ChangeViewer log={log} />
-
-                                                    <div className="flex items-center gap-4 mt-4 pt-4 border-t border-slate-100">
-                                                        <div className="flex items-center gap-2 text-xs text-slate-400">
-                                                            <Shield className="h-3 w-3" />
-                                                            IP: {log.ipAddress || 'Desconocida'}
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                )
-                            })}
-                        </div>
-                    )}
-                </div>
+                    </TabsContent>
+                </Tabs>
             </div>
             {/* Export Preview Dialog */}
             <Dialog open={showExportPreview} onOpenChange={setShowExportPreview}>

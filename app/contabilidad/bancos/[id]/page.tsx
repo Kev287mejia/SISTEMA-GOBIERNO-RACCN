@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { ArrowLeft, Landmark, TrendingUp, TrendingDown, DollarSign, Calendar, FileText, Plus, X } from "lucide-react"
+import { ArrowLeft, Landmark, TrendingUp, TrendingDown, DollarSign, Calendar, FileText, Plus, X, History as HistoryIcon, FileCheck2 } from "lucide-react"
 import { Checkbox } from "@/components/ui/checkbox"
 
 export default function BankAccountDetailPage() {
@@ -15,6 +15,7 @@ export default function BankAccountDetailPage() {
     const router = useRouter()
     const [data, setData] = useState<any>(null)
     const [movements, setMovements] = useState<any[]>([])
+    const [reconciliations, setReconciliations] = useState<any[]>([])
     const [loading, setLoading] = useState(true)
 
     // Manual Transaction State
@@ -35,6 +36,7 @@ export default function BankAccountDetailPage() {
                 .then(serverData => {
                     setData(serverData)
                     if (serverData?.movements) setMovements(serverData.movements)
+                    if (serverData?.reconciliations) setReconciliations(serverData.reconciliations)
                 })
                 .catch(console.error)
                 .finally(() => setLoading(false))
@@ -403,6 +405,46 @@ export default function BankAccountDetailPage() {
                                     ))}
                                 </TableBody>
                             </Table>
+                        )}
+                    </CardContent>
+                </Card>
+
+                {/* Audit Reconciliation History */}
+                <Card className="border-none shadow-xl shadow-slate-100/50">
+                    <CardHeader className="pb-3 border-b border-slate-50">
+                        <CardTitle className="text-xs font-black uppercase tracking-[0.2em] text-slate-400 flex items-center gap-2">
+                            <HistoryIcon className="h-4 w-4" /> Historial de Actas de Conciliación
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent className="p-0">
+                        {reconciliations.length === 0 ? (
+                            <div className="p-8 text-center text-slate-400 text-xs italic">
+                                No se han registrado actas de conciliación formal para esta cuenta.
+                            </div>
+                        ) : (
+                            <div className="divide-y divide-slate-50">
+                                {reconciliations.map((rec: any) => (
+                                    <div key={rec.id} className="p-4 flex items-center justify-between hover:bg-slate-50/50 transition-colors">
+                                        <div className="flex items-center gap-4">
+                                            <div className="h-10 w-10 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-600">
+                                                <FileCheck2 className="h-5 w-5" />
+                                            </div>
+                                            <div>
+                                                <p className="text-sm font-black text-slate-900">Acta #{rec.id.slice(-6).toUpperCase()}</p>
+                                                <p className="text-[10px] text-slate-500 font-medium">
+                                                    Realizado por: <span className="font-bold text-slate-700">{rec.user.nombre} {rec.user.apellido}</span>
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <div className="text-right">
+                                            <p className="text-xs font-bold text-slate-900">{new Date(rec.date).toLocaleDateString()} {new Date(rec.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                                            <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-100 text-[10px] mt-1">
+                                                {rec.totalMatching} Transacciones Conciliadas
+                                            </Badge>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
                         )}
                     </CardContent>
                 </Card>

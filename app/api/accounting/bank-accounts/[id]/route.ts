@@ -4,6 +4,32 @@ import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { Role, AuditAction } from "@prisma/client"
 
+export async function GET(
+    request: NextRequest,
+    { params }: { params: { id: string } }
+) {
+    try {
+        const session = await getServerSession(authOptions)
+        if (!session?.user) {
+            return NextResponse.json({ error: "No autorizado" }, { status: 401 })
+        }
+
+        const { id } = params
+        const account = await prisma.bankAccount.findUnique({
+            where: { id }
+        })
+
+        if (!account) {
+            return NextResponse.json({ error: "Cuenta no encontrada" }, { status: 404 })
+        }
+
+        return NextResponse.json(account)
+    } catch (error) {
+        console.error("Error fetching bank account:", error)
+        return NextResponse.json({ error: "Error interno" }, { status: 500 })
+    }
+}
+
 export async function PATCH(
     request: NextRequest,
     { params }: { params: { id: string } }

@@ -23,7 +23,8 @@ import {
     Printer,
     ArrowUpRight,
     ArrowDownLeft,
-    Paperclip
+    Paperclip,
+    Lock
 } from "lucide-react"
 import { FileUploader } from "@/components/ui/file-uploader"
 import { useState, useEffect } from "react"
@@ -57,7 +58,8 @@ export function AccountingEntryDetailDialog({ entry, open, onOpenChange }: Accou
 
     // Attachments Logic
     const [attachments, setAttachments] = useState<string[]>([])
-    const isEditable = entry.estado !== "APROBADO" && entry.estado !== "ANULADO"
+    const isLocked = !!entry.isLocked
+    const isEditable = entry.estado !== "APROBADO" && entry.estado !== "ANULADO" && !isLocked
 
     useEffect(() => {
         if (entry) {
@@ -107,6 +109,11 @@ export function AccountingEntryDetailDialog({ entry, open, onOpenChange }: Accou
                                 <p className="text-white/70 text-[10px] font-black uppercase tracking-widest">Asiento Contable / {entry.institucion}</p>
                                 <h2 className="text-3xl font-black leading-tight flex items-center gap-3">
                                     {entry.numero}
+                                    {isLocked && (
+                                        <Badge className="bg-rose-500 text-white border-none font-black text-xs px-3 py-1 flex items-center gap-1.5 animate-pulse">
+                                            <Lock className="h-3 w-3" /> PERIODO CERRADO
+                                        </Badge>
+                                    )}
                                     <Badge className="bg-white/20 text-white border-none font-black text-xs px-3 py-1 backdrop-blur-md">
                                         {entry.tipo}
                                     </Badge>
@@ -177,11 +184,20 @@ export function AccountingEntryDetailDialog({ entry, open, onOpenChange }: Accou
                             </div>
                             <div className="bg-gray-50/50 p-4 rounded-xl border border-gray-100 flex items-center gap-3">
                                 <div className="h-10 w-10 rounded-lg bg-white shadow-sm flex items-center justify-center">
-                                    <Briefcase className="h-5 w-5 text-gray-400" />
+                                    <ArrowUpRight className="h-5 w-5 text-indigo-400" />
                                 </div>
                                 <div>
-                                    <p className="text-[9px] font-black text-gray-400 uppercase">Centro de Costo</p>
-                                    <p className="text-xs font-bold text-gray-700">{entry.centroCosto || "INSTITUCIONAL"}</p>
+                                    <p className="text-[9px] font-black text-gray-400 uppercase">Renglón Gasto</p>
+                                    <p className="text-xs font-bold text-indigo-700">{entry.renglonGasto || "NO ASIGNADO"}</p>
+                                </div>
+                            </div>
+                            <div className="bg-gray-50/50 p-4 rounded-xl border border-gray-100 flex items-center gap-3">
+                                <div className="h-10 w-10 rounded-lg bg-white shadow-sm flex items-center justify-center">
+                                    <Building2 className="h-5 w-5 text-gray-400" />
+                                </div>
+                                <div>
+                                    <p className="text-[9px] font-black text-gray-400 uppercase">Presupuesto</p>
+                                    <p className="text-xs font-bold text-gray-700">{entry.budgetItem?.codigo || "INSTITUCIONAL"}</p>
                                 </div>
                             </div>
                         </section>

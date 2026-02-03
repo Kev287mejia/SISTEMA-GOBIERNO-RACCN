@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
         }
 
         const body = await request.json()
-        const { budgetItemId, monto, descripcion, referencia, mes } = body
+        const { budgetItemId, monto, descripcion, referencia, mes, centroCosto } = body
 
         if (!budgetItemId || !monto || !descripcion || !mes) {
             return NextResponse.json(
@@ -36,7 +36,8 @@ export async function POST(request: NextRequest) {
             monto: parseFloat(monto),
             descripcion,
             referencia,
-            mes: parseInt(mes)
+            mes: parseInt(mes),
+            centroCosto
         })
 
         // --- TREASURY INTEGRATION ---
@@ -65,30 +66,7 @@ export async function POST(request: NextRequest) {
         // ----------------------------
 
         // Create notification for the user and admins
-        try {
-            const { createNotification } = await import("@/lib/notifications")
-            const { Role: PrismaRole, NotificationType } = await import("@prisma/client")
-
-            // To the user who performed it
-            await createNotification({
-                userId: session.user.id,
-                type: NotificationType.SUCCESS,
-                title: "Ejecución Presupuestaria Registrada",
-                message: `Se ejecutó ${formatCurrency(parseFloat(monto))} de la partida presupuestaria. ${body.bankAccountId ? 'Movimiento bancario registrado.' : ''}`,
-                link: `/presupuesto?openItem=${budgetItemId}`
-            })
-
-            // To the DAF and Accountants
-            await createNotification({
-                type: NotificationType.INFO,
-                title: "Inversión/Gasto Presupuestario",
-                message: `${session.user.name} registró ejecución de C$ ${parseFloat(monto).toLocaleString()} para: ${descripcion}`,
-                link: "/presupuesto",
-                roles: [PrismaRole.Admin, PrismaRole.DirectoraDAF, PrismaRole.ContadorGeneral]
-            })
-        } catch (notifError) {
-            console.error("Failed to create notifications:", notifError)
-        }
+        // ... Notifications handled by Fiscal Guard in lib/budget.ts
 
         return NextResponse.json({
             data: execution,

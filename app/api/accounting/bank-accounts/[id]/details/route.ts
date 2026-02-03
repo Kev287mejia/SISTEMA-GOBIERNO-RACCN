@@ -43,11 +43,7 @@ export async function GET(
             return NextResponse.json({ error: "Cuenta no encontrada" }, { status: 404 })
         }
 
-        // 2. Fetch Related Movements (Logic Link via Account Number)
-        // We look for Checks issued from this account or Checks deposited to this account (if tracking that way)
-        // For now, let's assume 'EMITIDO' checks from this 'cuentaBancaria' are withdrawals.
-
-        // 2a. Fetch Related Checks
+        // 2. Fetch Related Movements
         const checks = await prisma.check.findMany({
             where: {
                 cuentaBancaria: account.accountNumber,
@@ -55,11 +51,17 @@ export async function GET(
             }
         })
 
-        // 2b. Fetch Manual Transactions
         const transactions = await prisma.bankTransaction.findMany({
             where: {
                 bankAccountId: account.id
             }
+        })
+
+        // 2c. Fetch formal Reconciliations
+        const reconciliations = await prisma.bankReconciliation.findMany({
+            where: { bankAccountId: account.id },
+            include: { user: { select: { nombre: true, apellido: true } } },
+            orderBy: { createdAt: 'desc' }
         })
 
         // 3. Merge and Calculate Stats
@@ -73,7 +75,7 @@ export async function GET(
             ...checks.map(c => ({
                 id: c.id,
                 date: c.fecha,
-                rawType: c.tipo, // 'EMITIDO' usually
+                rawType: c.tipo,
                 category: 'CHECK',
                 description: c.beneficiario || "Sin beneficiario",
                 reference: `CHQ-${c.numero}`,
@@ -102,14 +104,9 @@ export async function GET(
         const movementsWithBalance = allMovements.map(move => {
             let isExpense = false
 
-            // Logic for Check
             if (move.category === 'CHECK') {
                 if (move.rawType === 'EMITIDO') isExpense = true
-            }
-            // Logic for Manual Transaction
-            else {
-                // DEPOSIT, CREDIT_NOTE, TRANSFER_IN = Income
-                // WITHDRAWAL, DEBIT_NOTE, TRANSFER_OUT = Expense
+            } else {
                 const expenseTypes = ['WITHDRAWAL', 'DEBIT_NOTE', 'TRANSFER_OUT']
                 if (expenseTypes.includes(move.rawType)) isExpense = true
             }
@@ -136,7 +133,6 @@ export async function GET(
             }
         })
 
-        // Reverse for display
         const movementsDesc = movementsWithBalance.reverse()
 
         return NextResponse.json({
@@ -147,7 +143,8 @@ export async function GET(
                 totalExpense,
                 initialBalance
             },
-            movements: movementsDesc
+            movements: movementsDesc,
+            reconciliations
         })
 
     } catch (error) {

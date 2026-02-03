@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
 import { DashboardLayout } from "@/components/layout/dashboard-layout"
 import { AccountingReportDialog } from "@/components/accounting/accounting-report-dialog"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -24,16 +25,22 @@ import {
   Calendar,
   ClipboardCheck,
   Building2,
-  FileBarChart
+  FileBarChart,
+  Scale,
+  CreditCard,
+  Printer
 } from "lucide-react"
 import Link from "next/link"
 import { formatCurrency } from "@/lib/utils"
 import { Input } from "@/components/ui/input"
-import { AccountingEntryDetailDialog } from "@/components/accounting/accounting-entry-detail-dialog"
 import { AccountingCharts } from "@/components/accounting/accounting-charts"
 import { Checkbox } from "@/components/ui/checkbox"
 import { toast } from "sonner"
-import { Loader2 } from "lucide-react"
+import { Loader2, ShieldAlert, ArchiveRestore, FileOutput, Lock } from "lucide-react"
+import { useSession } from "next-auth/react"
+import { exportGeneralLedger } from "@/lib/exports/ledger"
+import { Separator } from "@/components/ui/separator"
+import { EntryDetailDialog } from "@/components/accounting/entry-detail-dialog"
 
 type AccountingEntry = {
   id: string
@@ -45,23 +52,29 @@ type AccountingEntry = {
   institucion: string
   estado: string
   cuentaContable: string
+  isLocked?: boolean
   documentoRef?: string
   creadoPor: {
     nombre: string
     apellido: string
     email: string
   }
+  check?: any
 }
 
 export default function ContabilidadPage() {
+  const router = useRouter()
+  const { data: session } = useSession()
   const [entries, setEntries] = useState<AccountingEntry[]>([])
   const [loading, setLoading] = useState(true)
-  const [selectedEntry, setSelectedEntry] = useState<AccountingEntry | null>(null)
-  const [isDetailOpen, setIsDetailOpen] = useState(false)
+  const [showDeleted, setShowDeleted] = useState(false)
   const [isReportOpen, setIsReportOpen] = useState(false)
   const [search, setSearch] = useState("")
   const [selectedIds, setSelectedIds] = useState<string[]>([])
   const [isProcessingBatch, setIsProcessingBatch] = useState(false)
+  const [isExporting, setIsExporting] = useState(false)
+  const [selectedEntryId, setSelectedEntryId] = useState<string | null>(null)
+  const [isEvidenceDialogOpen, setIsEvidenceDialogOpen] = useState(false)
   const [stats, setStats] = useState({
     total: 0,
     ingresos: 0,
@@ -178,7 +191,7 @@ export default function ContabilidadPage() {
   useEffect(() => {
     fetchEntries()
     fetchAnalytics()
-  }, [])
+  }, [showDeleted])
 
   const fetchAnalytics = async () => {
     try {
@@ -204,7 +217,7 @@ export default function ContabilidadPage() {
       setError(null)
 
       // Race condition: Fetch vs 2s Timeout
-      const fetchPromise = fetch("/api/accounting-entries?limit=50")
+      const fetchPromise = fetch(`/api/accounting-entries?limit=50${showDeleted ? '&includeDeleted=true' : ''}`)
       const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout")), 2000))
 
       const res: any = await Promise.race([fetchPromise, timeoutPromise])
@@ -255,11 +268,6 @@ export default function ContabilidadPage() {
     entry.institucion.toLowerCase().includes(search.toLowerCase()) ||
     entry.cuentaContable.toLowerCase().includes(search.toLowerCase())
   )
-
-  const handleOpenDetail = (entry: AccountingEntry) => {
-    setSelectedEntry(entry)
-    setIsDetailOpen(true)
-  }
 
   const toggleSelectAll = () => {
     if (selectedIds.length === filteredEntries.length) {
@@ -342,6 +350,40 @@ export default function ContabilidadPage() {
     toast.success("Informe exportado correctamente")
   }
 
+  const handleExportLedger = async () => {
+    setIsExporting(true)
+    const tId = toast.loading("Generando Libro Mayor...", {
+      description: "Analizando estados de cuenta y consolidando movimientos."
+    })
+    try {
+      // Fetch ALL approved entries for a full export (no limit)
+      const res = await fetch("/api/accounting-entries?limit=5000")
+      if (!res.ok) {
+        const errorText = await res.text();
+        console.error("API Error fetching ledger data:", res.status, errorText);
+        throw new Error(`Error al obtener datos: ${res.status} - ${errorText}`);
+      }
+      const data = await res.json()
+
+      if (!data.data || data.data.length === 0) {
+        console.warn("API returned no data for ledger export:", data);
+        throw new Error("No hay datos disponibles para exportar")
+      }
+
+      await exportGeneralLedger(data.data)
+
+      toast.success("Excel Generado", {
+        id: tId,
+        description: "El Libro Mayor ha sido exportado exitosamente."
+      })
+    } catch (e: any) {
+      console.error("Export Ledger Error:", e)
+      toast.error(e.message || "Error al exportar", { id: tId })
+    } finally {
+      setIsExporting(false)
+    }
+  }
+
   const getStatusBadge = (estado: string) => {
     switch (estado) {
       case "APROBADO":
@@ -360,23 +402,71 @@ export default function ContabilidadPage() {
   return (
     <DashboardLayout>
       <div className="space-y-8 max-w-7xl mx-auto">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div>
-            <h1 className="text-4xl font-black tracking-tight text-gray-900">Libro Diario Contable</h1>
-            <p className="text-gray-500 mt-2 font-medium flex items-center gap-2">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm relative overflow-hidden group">
+          <div className="absolute top-0 right-0 p-8 opacity-5 pointer-events-none group-hover:scale-110 transition-transform">
+            <Scale className="h-32 w-32 rotate-12" />
+          </div>
+          <div className="relative z-10">
+            <h1 className="text-4xl font-black tracking-tight text-slate-900">Libro Diario <span className="text-indigo-600">General</span></h1>
+            <p className="text-slate-500 mt-2 font-bold text-sm flex items-center gap-2">
               <Building2 className="h-4 w-4 text-indigo-500" />
-              Control de asientos y trazabilidad financiera institucional
-              {error && <span className="text-red-500 text-xs bg-red-100 px-2 py-1 rounded ml-2">{error}</span>}
+              Gestión de trazabilidad fiscal y control de auditoría activa
+              {error && <span className="text-rose-500 text-[10px] font-black bg-rose-50 px-3 py-1 rounded-full ml-2 border border-rose-100 animate-pulse">{error}</span>}
             </p>
           </div>
 
-          <div className="flex items-center gap-3">
-            <Button variant="outline" className="gap-2 shadow-sm border-gray-200" onClick={() => setIsReportOpen(true)}>
-              <FileBarChart className="h-4 w-4" /> Informe General
-            </Button>
+          <div className="flex flex-wrap items-center gap-3 relative z-10">
+            <div className="flex items-center gap-2 mr-2">
+              {(session?.user?.role === "Admin" || session?.user?.role === "Auditor") && (
+                <Button
+                  variant={showDeleted ? "destructive" : "outline"}
+                  className="rounded-xl h-12 px-4 shadow-sm border-slate-200 hover:bg-slate-50 transition-all"
+                  onClick={() => setShowDeleted(!showDeleted)}
+                >
+                  {showDeleted ? <ArchiveRestore className="h-4 w-4" /> : <ShieldAlert className="h-4 w-4 text-amber-500" />}
+                </Button>
+              )}
+            </div>
+
+            <Separator orientation="vertical" className="h-8 hidden lg:block bg-slate-100" />
+
+            <div className="flex items-center gap-2">
+              <Link href="/contabilidad/reportes">
+                <Button className="gap-2 rounded-xl h-12 px-6 bg-indigo-600 hover:bg-indigo-700 text-white font-black uppercase text-[10px] shadow-lg shadow-indigo-200 transition-all hover:translate-y-[-1px]">
+                  <TrendingUp className="h-4 w-4" /> Inteligencia Financiera (Senior)
+                </Button>
+              </Link>
+
+              {(session?.user?.role === "Admin" || session?.user?.role === "Auditor" || session?.user?.role === "ContadorGeneral") && (
+                <Button
+                  variant="outline"
+                  className="gap-2 rounded-xl h-12 px-6 border-emerald-200 bg-emerald-50/20 text-emerald-700 hover:bg-emerald-50 font-black uppercase text-[10px] transition-all"
+                  onClick={handleExportLedger}
+                  disabled={isExporting}
+                >
+                  {isExporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileOutput className="h-4 w-4" />}
+                  Exportar Mayor
+                </Button>
+              )}
+
+              {(session?.user?.role === "Admin" || session?.user?.role === "Auditor" || session?.user?.role === "ContadorGeneral" || session?.user?.role === "ResponsableContabilidad") && (
+                <Link href="/contabilidad/cierres">
+                  <Button variant="outline" className="gap-2 rounded-xl h-12 px-6 border-rose-100 bg-rose-50/20 text-rose-700 hover:bg-rose-50 font-black uppercase text-[10px] transition-all">
+                    <Lock className="h-4 w-4 text-rose-500" /> Cierres
+                  </Button>
+                </Link>
+              )}
+
+              <Button variant="outline" className="gap-2 rounded-xl h-12 px-6 border-slate-200 bg-white font-black uppercase text-[10px] hover:bg-slate-50 transition-all" onClick={() => setIsReportOpen(true)}>
+                <FileBarChart className="h-4 w-4 text-slate-500" /> Informe General
+              </Button>
+            </div>
+
+            <Separator orientation="vertical" className="h-8 hidden lg:block bg-slate-100" />
+
             <Link href="/contabilidad/nuevo">
-              <Button className="bg-indigo-600 hover:bg-indigo-700 gap-2 shadow-lg shadow-indigo-100">
-                <Plus className="h-4 w-4" /> Nuevo Asiento
+              <Button className="bg-indigo-600 hover:bg-indigo-700 gap-2 h-12 px-8 rounded-xl shadow-xl shadow-indigo-100 font-black uppercase text-[10px] transition-all hover:translate-y-[-2px]">
+                <Plus className="h-5 w-5" /> Nuevo Asiento
               </Button>
             </Link>
           </div>
@@ -493,7 +583,7 @@ export default function ContabilidadPage() {
                       </th>
                       <th className="h-14 px-6 text-left align-middle font-black text-[10px] uppercase tracking-wider text-gray-400">ID / Folio</th>
                       <th className="h-14 px-6 text-left align-middle font-black text-[10px] uppercase tracking-wider text-gray-400">Fecha Operación</th>
-                      <th className="h-14 px-6 text-left align-middle font-black text-[10px] uppercase tracking-wider text-gray-400">Descripción del Asiento</th>
+                      <th className="h-14 px-6 text-left align-middle font-black text-[10px] uppercase tracking-wider text-gray-400">Concepto</th>
                       <th className="h-14 px-6 text-center align-middle font-black text-[10px] uppercase tracking-wider text-gray-400">Cuenta Contable</th>
                       <th className="h-14 px-6 text-right align-middle font-black text-[10px] uppercase tracking-wider text-gray-400">Monto</th>
                       <th className="h-14 px-6 text-center align-middle font-black text-[10px] uppercase tracking-wider text-gray-400">Estado</th>
@@ -514,7 +604,22 @@ export default function ContabilidadPage() {
                           </td>
                           <td className="px-6 py-4">
                             <div className="flex flex-col">
-                              <span className="font-mono text-xs font-black text-indigo-600 tracking-tighter">{entry.numero}</span>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setSelectedEntryId(entry.id)
+                                  setIsEvidenceDialogOpen(true)
+                                }}
+                                className="font-mono text-xs font-black text-indigo-600 tracking-tighter flex items-center gap-2 hover:text-indigo-800 hover:underline transition-colors cursor-pointer text-left"
+                              >
+                                {entry.numero}
+                                {(entry as any).isLocked && (
+                                  <Lock className="h-3 w-3 text-rose-500" />
+                                )}
+                                {(entry as any).deletedAt && (
+                                  <Badge variant="destructive" className="text-[7px] h-3 px-1 leading-none font-black uppercase">ELIMINADO</Badge>
+                                )}
+                              </button>
                               <span className="text-[10px] text-gray-400 font-bold uppercase">{entry.institucion}</span>
                             </div>
                           </td>
@@ -547,14 +652,42 @@ export default function ContabilidadPage() {
                             {getStatusBadge(entry.estado)}
                           </td>
                           <td className="px-6 py-4 text-right">
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className="h-8 w-8 p-0 rounded-lg hover:bg-white group-hover:shadow-sm"
-                              onClick={() => handleOpenDetail(entry)}
-                            >
-                              <Eye className="h-4 w-4 text-indigo-600" />
-                            </Button>
+                            <div className="flex items-center gap-1">
+                              {entry.tipo === "EGRESO" && entry.estado === "APROBADO" && !entry.check && (
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="h-8 px-2 rounded-lg hover:bg-rose-50 text-rose-600 font-bold text-[9px] uppercase flex items-center gap-1"
+                                  onClick={() => router.push(`/caja/nuevo?entryId=${entry.id}`)}
+                                >
+                                  <CreditCard className="h-3.5 w-3.5" />
+                                  Pagar
+                                </Button>
+                              )}
+                              {entry.check && (
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="h-8 px-2 rounded-lg hover:bg-emerald-50 text-emerald-600 font-bold text-[9px] uppercase flex items-center gap-1"
+                                  onClick={() => router.push(`/caja/cheques/${entry.check.id}/print`)}
+                                >
+                                  <Printer className="h-3.5 w-3.5" />
+                                  Cheque #{entry.check.numero}
+                                </Button>
+                              )}
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="ghost"
+                                className="h-8 w-8 p-0 rounded-lg hover:bg-white group-hover:shadow-sm"
+                                onClick={() => {
+                                  setSelectedEntryId(entry.id)
+                                  setIsEvidenceDialogOpen(true)
+                                }}
+                              >
+                                <Eye className="h-4 w-4 text-indigo-600" />
+                              </Button>
+                            </div>
                           </td>
                         </tr>
                       )
@@ -623,20 +756,19 @@ export default function ContabilidadPage() {
             Cancelar
           </Button>
         </div>
-      )}
-
-      <AccountingEntryDetailDialog
-        entry={selectedEntry}
-        open={isDetailOpen}
-        onOpenChange={setIsDetailOpen}
-      />
-
-      <AccountingReportDialog
+      )}\n\n      <AccountingReportDialog
         open={isReportOpen}
         onOpenChange={setIsReportOpen}
         entries={filteredEntries}
         totalIngresos={stats.ingresos}
         totalEgresos={stats.egresos}
+      />
+
+      <EntryDetailDialog
+        open={isEvidenceDialogOpen}
+        onOpenChange={setIsEvidenceDialogOpen}
+        entryId={selectedEntryId}
+        onUpdate={fetchEntries}
       />
     </DashboardLayout>
   )

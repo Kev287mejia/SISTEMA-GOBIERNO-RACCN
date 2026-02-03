@@ -24,7 +24,20 @@ export async function GET(req: Request) {
                         nombre: true,
                         apellido: true
                     }
-                }
+                },
+                budgetItem: {
+                    select: {
+                        codigo: true,
+                        nombre: true
+                    }
+                },
+                budgetApprovedBy: { select: { nombre: true, apellido: true, cargo: true } },
+                budgetRejectedBy: { select: { nombre: true, apellido: true, cargo: true } },
+                preCheckApprovedBy: { select: { nombre: true, apellido: true, cargo: true } },
+                preCheckRejectedBy: { select: { nombre: true, apellido: true, cargo: true } },
+                paidBy: { select: { nombre: true, apellido: true, cargo: true } },
+                accountedBy: { select: { nombre: true, apellido: true, cargo: true } },
+                issuedBy: { select: { nombre: true, apellido: true, cargo: true } }
             }
         })
 
@@ -37,7 +50,7 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
     try {
         const session = await getServerSession(authOptions)
-        if (!session || (session.user.role !== Role.ResponsableCaja && session.user.role !== Role.Admin)) {
+        if (!session) {
             return new NextResponse("Unauthorized", { status: 401 })
         }
 
@@ -52,7 +65,11 @@ export async function POST(req: Request) {
             fecha,
             referencia,
             providerId,
-            accountingEntryId
+            accountingEntryId,
+            budgetItemId,
+            hasCartaSolicitud,
+            hasDocumentosCompletos,
+            hasFirmaSolicitante,
         } = body
 
         if (!numero || !tipo || !banco || !cuentaBancaria || !monto || !fecha) {
@@ -122,8 +139,12 @@ export async function POST(req: Request) {
                 usuarioId: session.user.id,
                 entityId: providerId,
                 accountingEntryId,
-                estado: "PENDIENTE_VALIDACION"
-            }
+                budgetItemId,
+                hasCartaSolicitud: !!hasCartaSolicitud,
+                hasDocumentosCompletos: !!hasDocumentosCompletos,
+                hasFirmaSolicitante: !!hasFirmaSolicitante,
+                estado: "CHEQUE_REQUESTED"
+            } as any
         })
 
         // Audit Log

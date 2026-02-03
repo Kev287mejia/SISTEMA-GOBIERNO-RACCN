@@ -4,7 +4,8 @@ import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { createAccountingEntrySchema, listAccountingEntriesSchema } from "@/lib/validations/accounting"
 import { createAccountingEntry } from "@/lib/accounting"
-import { EntryStatus } from "@prisma/client"
+import { EntryStatus, Role as PrismaRole, NotificationType } from "@prisma/client"
+import { SecurityAudit } from "@/lib/security/audit"
 
 /**
  * GET /api/accounting-entries
@@ -31,12 +32,16 @@ export async function GET(request: NextRequest) {
       fechaDesde: searchParams.get("fechaDesde") || undefined,
       fechaHasta: searchParams.get("fechaHasta") || undefined,
       search: searchParams.get("search") || undefined,
+      hasCheck: searchParams.get("hasCheck") || undefined,
     }
 
     const validatedQuery = listAccountingEntriesSchema.parse(query)
 
+    const canSeeDeleted = session.user.role === "Admin" || session.user.role === "Auditor"
+    const includeDeleted = searchParams.get("includeDeleted") === "true" && canSeeDeleted
+
     const where: any = {
-      deletedAt: null,
+      ...(includeDeleted ? {} : { deletedAt: null }),
     }
 
     if (validatedQuery.tipo) {
@@ -69,9 +74,15 @@ export async function GET(request: NextRequest) {
       ]
     }
 
+    if (query.hasCheck === "true") {
+      where.check = { isNot: null }
+    } else if (query.hasCheck === "false") {
+      where.check = null
+    }
+
     const skip = (validatedQuery.page - 1) * validatedQuery.limit
 
-    const [entries, total] = await Promise.all([
+    const [entries, total, closedPeriods] = await Promise.all([
       prisma.accountingEntry.findMany({
         where,
         skip,
@@ -96,13 +107,25 @@ export async function GET(request: NextRequest) {
               email: true,
             },
           },
+          check: true,
         },
       }),
       prisma.accountingEntry.count({ where }),
+      prisma.accountingClosure.findMany({
+        where: { estado: 'CERRADO' }
+      })
     ])
 
+    const entriesWithLock = entries.map((entry: any) => ({
+      ...entry,
+      isLocked: closedPeriods.some((cp: any) =>
+        cp.mes === (entry.fecha.getMonth() + 1) &&
+        cp.anio === entry.fecha.getFullYear()
+      )
+    }))
+
     return NextResponse.json({
-      data: entries,
+      data: entriesWithLock,
       pagination: {
         page: validatedQuery.page,
         limit: validatedQuery.limit,
@@ -148,9 +171,11 @@ export async function POST(request: NextRequest) {
 
     const entry = await createAccountingEntry(validatedData)
 
+    // Security Audit Analyze (Unusual Operations Detection)
+    await SecurityAudit.analyzeEntry(entry, session.user.id, session.user.name || "Usuario")
+
     // Notify financial team about new entry
     const { createNotification } = await import("@/lib/notifications")
-    const { Role: PrismaRole, NotificationType } = await import("@prisma/client")
     await createNotification({
       type: NotificationType.INFO,
       title: "Nuevo Asiento Contable",

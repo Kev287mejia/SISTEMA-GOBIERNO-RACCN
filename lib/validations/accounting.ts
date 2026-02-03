@@ -50,6 +50,8 @@ export const createAccountingEntrySchema = z.object({
     .max(2000, "Las observaciones no pueden exceder 2000 caracteres")
     .optional(),
   evidenciaUrls: z.array(z.string()).optional().default([]),
+  budgetItemId: z.string().cuid("ID de presupuesto inválido").optional(),
+  renglonGasto: z.string().max(50, "El renglón de gasto es demasiado largo").optional(),
 })
 
 export const updateAccountingEntrySchema = createAccountingEntrySchema.partial().extend({
@@ -62,7 +64,7 @@ export const getAccountingEntrySchema = z.object({
 
 export const listAccountingEntriesSchema = z.object({
   page: z.coerce.number().int().positive().default(1),
-  limit: z.coerce.number().int().positive().max(100).default(10),
+  limit: z.coerce.number().int().positive().max(5000).default(10),
   tipo: z.nativeEnum(EntryType).optional(),
   institucion: z.nativeEnum(Institution).optional(),
   estado: z.string().optional(),
