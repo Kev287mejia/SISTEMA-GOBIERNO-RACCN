@@ -39,8 +39,20 @@ export default withAuth(
       if (isApiRoute) {
         return NextResponse.json({ error: "Prohibido: No tiene permisos suficientes" }, { status: 403 })
       }
-      // Redirect to dashboard if user doesn't have permission
-      return NextResponse.redirect(new URL("/dashboard", req.url))
+      // Redirect to dashboard if user doesn't have permission, but be careful of loops
+      if (userRole === Role.ResponsableCaja) {
+        return NextResponse.redirect(new URL("/caja", req.url))
+      }
+      if (userRole === Role.Bodega) {
+        return NextResponse.redirect(new URL("/inventario", req.url))
+      }
+
+      // Default fallback (only if not already on dashboard to avoid loop)
+      if (pathname !== "/dashboard") {
+        return NextResponse.redirect(new URL("/dashboard", req.url))
+      }
+      // If on dashboard and denied, we have a problem. Redirect to login or show 403
+      return NextResponse.redirect(new URL("/auth/login", req.url))
     }
 
     // Agregar headers de seguridad

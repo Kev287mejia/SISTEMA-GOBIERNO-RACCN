@@ -13,9 +13,6 @@ export const routePermissions: Record<string, Role[]> = {
     Role.CoordinadorGobierno,
     Role.DirectoraDAF,
     Role.DirectoraRRHH,
-    Role.ResponsableCaja,
-    Role.ResponsableCredito,
-    Role.ResponsablePresupuesto,
     Role.ResponsableContabilidad,
   ],
   "/caja": [
@@ -76,7 +73,6 @@ export const routePermissions: Record<string, Role[]> = {
     Role.Auditor,
     Role.CoordinadorGobierno,
     Role.DirectoraDAF,
-    Role.ResponsableCaja,
     Role.ResponsablePresupuesto,
     Role.ResponsableContabilidad,
   ],
@@ -87,7 +83,7 @@ export const routePermissions: Record<string, Role[]> = {
     Role.DirectoraDAF,
     Role.CoordinadorGobierno,
     Role.Auditor,
-    Role.ResponsableCaja,
+    Role.Auditor,
   ],
   "/contabilidad/reportes": [
     Role.Admin,
@@ -112,7 +108,7 @@ export const routePermissions: Record<string, Role[]> = {
     Role.DirectoraDAF,
     Role.CoordinadorGobierno,
     Role.Auditor,
-    Role.ResponsableCaja,
+    Role.Auditor,
   ],
   "/facturas": [
     Role.Admin,
@@ -196,7 +192,7 @@ export const routePermissions: Record<string, Role[]> = {
     Role.DirectoraDAF,
     Role.CoordinadorGobierno,
     Role.Auditor,
-    Role.ResponsableCaja,
+    Role.Auditor,
     Role.ResponsablePresupuesto,
   ],
   "/api/budget": [
@@ -218,7 +214,6 @@ export const routePermissions: Record<string, Role[]> = {
     Role.ResponsableContabilidad,
     Role.DirectoraDAF,
     Role.CoordinadorGobierno,
-    Role.ResponsableCaja,
   ],
   "/api/dashboard": [
     Role.Admin,
@@ -229,7 +224,7 @@ export const routePermissions: Record<string, Role[]> = {
     Role.ResponsableContabilidad,
     Role.DirectoraDAF,
     Role.CoordinadorGobierno,
-    Role.ResponsableCaja,
+    Role.CoordinadorGobierno,
     Role.DirectoraRRHH,
   ],
   "/api/notifications": [
@@ -330,7 +325,7 @@ export const routePermissions: Record<string, Role[]> = {
     Role.DirectoraDAF,
     Role.CoordinadorGobierno,
     Role.Auditor,
-    Role.ResponsableCaja,
+    Role.Auditor,
   ],
   "/api/inventory/items": [
     Role.Admin,
