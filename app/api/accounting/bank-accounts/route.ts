@@ -106,12 +106,12 @@ export async function GET(req: NextRequest) {
 
             return {
                 ...acc,
-                balance: currentBookBalance, // Keeping for backward compatibility
-                bookBalance: currentBookBalance,
-                bankBalance: currentBankBalance,
-                floatingWithdrawals: floatingExpense,
-                floatingDeposits: floatingIncome,
-                projectedBalance: currentBankBalance - floatingExpense // This is what the user wants to see: Banco - Lo que va a salir
+                balance: role === Role.ResponsableCaja ? 0 : currentBookBalance,
+                bookBalance: role === Role.ResponsableCaja ? 0 : currentBookBalance,
+                bankBalance: role === Role.ResponsableCaja ? 0 : currentBankBalance,
+                floatingWithdrawals: role === Role.ResponsableCaja ? 0 : floatingExpense,
+                floatingDeposits: role === Role.ResponsableCaja ? 0 : floatingIncome,
+                projectedBalance: role === Role.ResponsableCaja ? 0 : (currentBankBalance - floatingExpense)
             }
         }))
 
