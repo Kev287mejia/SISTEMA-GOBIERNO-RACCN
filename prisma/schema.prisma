@@ -584,6 +584,7 @@ model Check {
   issuedAt              DateTime?
   
   renglonGasto          String?
+  evidenceUrls          String[]         @default([])
 
   accountingEntry   AccountingEntry? @relation(fields: [accountingEntryId], references: [id])
   budgetItem        BudgetItem?      @relation(fields: [budgetItemId], references: [id])
@@ -687,6 +688,7 @@ model BankAccount {
   isActive       Boolean           @default(false)
   minBalance     Decimal           @default(0) @db.Decimal(15, 2)
   currentBalance Decimal           @default(0) @db.Decimal(15, 2)
+  evidenceUrls   String[]          @default([])
   createdAt      DateTime          @default(now())
   updatedAt      DateTime          @updatedAt
   transactions        BankTransaction[]

@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { ArrowLeft, Landmark, TrendingUp, TrendingDown, DollarSign, Calendar, FileText, Plus, X, History as HistoryIcon, FileCheck2 } from "lucide-react"
 import { Checkbox } from "@/components/ui/checkbox"
+import { BankAccountDocuments } from "@/components/bank/bank-account-documents"
 
 export default function BankAccountDetailPage() {
     const params = useParams()
@@ -337,6 +338,12 @@ export default function BankAccountDetailPage() {
                         </CardContent>
                     </Card>
                 </div>
+
+                {/* Bank Account Documents Section */}
+                <BankAccountDocuments
+                    accountId={account.id}
+                    initialUrls={account.evidenceUrls || []}
+                />
 
                 {/* Movements Table */}
                 <Card className="border-none shadow-xl shadow-slate-100/50">

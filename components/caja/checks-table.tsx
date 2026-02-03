@@ -203,11 +203,28 @@ export function ChecksTable() {
                                         {Number(c.monto).toLocaleString('es-NI', { style: 'currency', currency: 'NIO' })}
                                     </TableCell>
                                     <TableCell className="px-6 text-center">
-                                        <div className="flex justify-center gap-1">
-                                            <div className={`h-2 w-2 rounded-full ${c.hasCartaSolicitud ? 'bg-emerald-500' : 'bg-slate-200'}`} title="Carta Solicitud" />
-                                            <div className={`h-2 w-2 rounded-full ${c.hasDocumentosCompletos ? 'bg-emerald-500' : 'bg-slate-200'}`} title="Documentación Completa" />
-                                            <div className={`h-2 w-2 rounded-full ${c.hasFirmaSolicitante ? 'bg-emerald-500' : 'bg-slate-200'}`} title="Firma Solicitante" />
-                                        </div>
+                                        {c.evidenceUrls && c.evidenceUrls.length > 0 ? (
+                                            <div className="flex justify-center gap-1">
+                                                {c.evidenceUrls.map((url: string, idx: number) => (
+                                                    <a
+                                                        key={idx}
+                                                        href={url}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="h-6 w-6 rounded-full bg-emerald-100 hover:bg-emerald-200 flex items-center justify-center transition-colors"
+                                                        title={`Documento ${idx + 1}`}
+                                                    >
+                                                        <span className="text-[10px] font-bold text-emerald-700">{idx + 1}</span>
+                                                    </a>
+                                                ))}
+                                            </div>
+                                        ) : (
+                                            <div className="flex justify-center gap-1">
+                                                <div className={`h-2 w-2 rounded-full ${c.hasCartaSolicitud ? 'bg-emerald-500' : 'bg-slate-200'}`} title="Carta Solicitud" />
+                                                <div className={`h-2 w-2 rounded-full ${c.hasDocumentosCompletos ? 'bg-emerald-500' : 'bg-slate-200'}`} title="Documentación Completa" />
+                                                <div className={`h-2 w-2 rounded-full ${c.hasFirmaSolicitante ? 'bg-emerald-500' : 'bg-slate-200'}`} title="Firma Solicitante" />
+                                            </div>
+                                        )}
                                     </TableCell>
                                     <TableCell className="px-6">
                                         {getStatusBadge(c.estado)}

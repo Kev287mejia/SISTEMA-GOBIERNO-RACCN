@@ -158,6 +158,13 @@ export default function CuentasBancariasPage() {
                                                 <p className="text-2xl font-mono font-bold text-slate-700 tracking-wider">
                                                     {acc.accountNumber.replace(/(\d{4})(\d{4})(\d{4})(\d{4})/, "$1 $2 $3 $4")}
                                                 </p>
+                                                {acc.evidenceUrls && acc.evidenceUrls.length > 0 && (
+                                                    <div className="flex items-center gap-1.5 mt-2">
+                                                        <Badge variant="outline" className="text-[10px] border-indigo-200 bg-indigo-50 text-indigo-700">
+                                                            📎 {acc.evidenceUrls.length} documento{acc.evidenceUrls.length !== 1 ? 's' : ''}
+                                                        </Badge>
+                                                    </div>
+                                                )}
                                                 <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mt-2 flex items-center gap-1.5 group-hover:text-indigo-500 transition-colors">
                                                     <EyeOff className="h-3 w-3" /> Ver Detalle de Movimientos
                                                 </p>

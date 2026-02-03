@@ -70,6 +70,7 @@ export async function POST(req: Request) {
             hasCartaSolicitud,
             hasDocumentosCompletos,
             hasFirmaSolicitante,
+            evidenceUrls,
         } = body
 
         if (!numero || !tipo || !banco || !cuentaBancaria || !monto || !fecha) {
@@ -143,6 +144,7 @@ export async function POST(req: Request) {
                 hasCartaSolicitud: !!hasCartaSolicitud,
                 hasDocumentosCompletos: !!hasDocumentosCompletos,
                 hasFirmaSolicitante: !!hasFirmaSolicitante,
+                evidenceUrls: evidenceUrls || [],
                 estado: "CHEQUE_REQUESTED"
             } as any
         })

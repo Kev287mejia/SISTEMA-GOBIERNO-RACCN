@@ -1,23 +1,23 @@
-import { NextResponse } from "next/server"
-import { getServerSession } from "next-auth"
-import { authOptions } from "@/lib/auth"
+import { NextRequest, NextResponse } from "next/server"
+import { getToken } from "next-auth/jwt"
 import { prisma } from "@/lib/prisma"
 import { Role } from "@prisma/client"
 
-export async function GET() {
+export async function GET(req: NextRequest) {
     try {
-        const session = await getServerSession(authOptions)
+        // Usar getToken es más robusto para API Routes que getServerSession
+        const token = await getToken({ req })
 
-        console.log("Bank Accounts API Request Log:")
-        if (!session?.user) {
-            console.log(" - No active session")
+        console.log("Bank Accounts API (getToken) Log:")
+        if (!token) {
+            console.log(" - No token found")
             return NextResponse.json({ error: "No autorizado" }, { status: 401 })
         }
 
-        const start = Date.now()
-        const role = session.user.role as Role
-        console.log(` - User Role: ${role}`)
-        console.log(` - User ID: ${session.user.id}`)
+        const role = token.role as Role
+        const email = token.email
+        console.log(`[DEBUG] API BankAccounts - User: ${email}`)
+        console.log(`[DEBUG] API BankAccounts - Role received from token: '${role}'`)
 
         // Roles permitidos para ver cuentas bancarias
         const allowedRoles: Role[] = [
@@ -31,13 +31,17 @@ export async function GET() {
             Role.ResponsablePresupuesto
         ]
 
-        if (!allowedRoles.includes(session.user.role as Role)) {
+        console.log(`[DEBUG] Is Allowed? ${allowedRoles.includes(role)}`)
+
+        if (!allowedRoles.includes(role)) {
+            console.log(`[DEBUG] ACCESS DENIED for role ${role}`)
             return NextResponse.json({ error: "Prohibido" }, { status: 403 })
         }
 
         const accounts = await prisma.bankAccount.findMany({
             orderBy: { createdAt: 'desc' }
         })
+        console.log(`[DEBUG] Accounts found in DB: ${accounts.length}`)
 
         // Convert keys if necessary from raw result or just return as is
         // Enrich with Balance Calculation

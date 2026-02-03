@@ -101,6 +101,29 @@ export async function PATCH(
             return NextResponse.json(account)
         }
 
+        // Handle evidenceUrls update
+        if (body.evidenceUrls !== undefined) {
+            const account = await prisma.bankAccount.update({
+                where: { id },
+                data: {
+                    evidenceUrls: body.evidenceUrls
+                }
+            })
+
+            await prisma.auditLog.create({
+                data: {
+                    accion: "UPDATE",
+                    entidad: "BankAccount",
+                    entidadId: id,
+                    descripcion: `Actualización de documentos de cuenta bancaria (ID: ${id})`,
+                    usuarioId: session.user.id,
+                    datosNuevos: { evidenceUrls: body.evidenceUrls }
+                }
+            })
+
+            return NextResponse.json(account)
+        }
+
         return NextResponse.json({ error: "Acción no válida" }, { status: 400 })
 
     } catch (error) {

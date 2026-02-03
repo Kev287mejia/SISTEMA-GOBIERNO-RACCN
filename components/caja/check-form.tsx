@@ -21,6 +21,7 @@ import {
     SelectTrigger,
     SelectValue
 } from "@/components/ui/select"
+import { FileUploader } from "@/components/ui/file-uploader"
 import { toast } from "sonner"
 
 const formSchema = z.object({
@@ -40,6 +41,7 @@ export function CheckForm({ onSuccess }: { onSuccess: () => void }) {
     const [loading, setLoading] = useState(false)
     const [providers, setProviders] = useState([])
     const [budgetItems, setBudgetItems] = useState([])
+    const [evidenceUrls, setEvidenceUrls] = useState<string[]>([])
 
     useEffect(() => {
         const fetchInitialData = async () => {
@@ -85,7 +87,8 @@ export function CheckForm({ onSuccess }: { onSuccess: () => void }) {
                     ...values,
                     monto: Number(values.monto),
                     providerId: values.providerId === "none" ? undefined : values.providerId,
-                    budgetItemId: values.budgetItemId === "none" ? undefined : values.budgetItemId
+                    budgetItemId: values.budgetItemId === "none" ? undefined : values.budgetItemId,
+                    evidenceUrls: evidenceUrls
                 }),
             })
 
@@ -280,6 +283,21 @@ export function CheckForm({ onSuccess }: { onSuccess: () => void }) {
                         </FormItem>
                     )}
                 />
+
+                {/* Sección de Documentos Adjuntos */}
+                <div className="space-y-3 pt-4 border-t border-slate-200">
+                    <div className="space-y-1">
+                        <h4 className="text-sm font-bold text-slate-900">📎 Documentos Requeridos</h4>
+                        <p className="text-xs text-slate-500">
+                            Adjunte los siguientes documentos: (1) Comprobante de Pago, (2) Recibo de Pago, (3) Solicitud de Emisión de Cheques
+                        </p>
+                    </div>
+                    <FileUploader
+                        value={evidenceUrls}
+                        onChange={setEvidenceUrls}
+                        maxFiles={3}
+                    />
+                </div>
 
                 <Button type="submit" className="w-full" disabled={loading}>
                     {loading ? "Registrando..." : "Registrar Cheque Bancario"}

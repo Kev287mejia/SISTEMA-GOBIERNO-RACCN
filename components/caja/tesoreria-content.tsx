@@ -24,13 +24,17 @@ import { useRouter } from "next/navigation"
 import { formatCurrency } from "@/lib/utils"
 import { toast } from "sonner"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { BankAccountDocuments } from "@/components/bank/bank-account-documents" // Import the document manager
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog" // Import Dialog
 
 export function TesoreriaContent() {
     const router = useRouter()
     const [pendingEntries, setPendingEntries] = useState<any[]>([])
     const [checks, setChecks] = useState<any[]>([])
+    const [bankAccounts, setBankAccounts] = useState<any[]>([]) // State for bank accounts
     const [loading, setLoading] = useState(true)
     const [selectedTab, setSelectedTab] = useState("pending")
+    const [selectedAccount, setSelectedAccount] = useState<any>(null) // For the dialog
 
     useEffect(() => {
         fetchData()
@@ -47,6 +51,21 @@ export function TesoreriaContent() {
             const checksRes = await fetch("/api/accounting/checks")
             const checksData = await checksRes.json()
             setChecks(Array.isArray(checksData) ? checksData : [])
+
+            const banksRes = await fetch("/api/accounting/bank-accounts")
+            if (!banksRes.ok) {
+                const errText = await banksRes.text()
+                console.error("Bank fetch error:", banksRes.status, errText)
+                if (banksRes.status === 403) {
+                    toast.error("No tienes permisos (403).")
+                } else {
+                    toast.error(`Error ${banksRes.status}: ${errText.slice(0, 100)}`)
+                }
+                setBankAccounts([])
+            } else {
+                const banksData = await banksRes.json()
+                setBankAccounts(Array.isArray(banksData) ? banksData : [])
+            }
         } catch (error) {
             console.error(error)
             toast.error("Error al cargar datos de tesorería")
@@ -89,9 +108,14 @@ export function TesoreriaContent() {
                         <History className="h-3.5 w-3.5 mr-2 text-indigo-500" />
                         Historial de Emisiones ({checks.length})
                     </TabsTrigger>
+                    <TabsTrigger value="docs" className="rounded-xl px-6 font-black uppercase text-[10px] data-[state=active]:bg-white data-[state=active]:shadow-sm">
+                        <Building className="h-3.5 w-3.5 mr-2 text-emerald-600" />
+                        Expedientes Bancarios
+                    </TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="pending" className="mt-6 space-y-4">
+                    {/* ... (existing pending content) ... */}
                     {pendingEntries.length === 0 ? (
                         <Card className="border-2 border-dashed border-slate-200 bg-slate-50/50 rounded-[2rem] py-16 text-center">
                             <CheckCircle2 className="h-12 w-12 text-emerald-500 mx-auto mb-4 opacity-20" />
@@ -135,6 +159,7 @@ export function TesoreriaContent() {
                 </TabsContent>
 
                 <TabsContent value="checks" className="mt-6 space-y-4">
+                    {/* ... (existing checks content) ... */}
                     {checks.length === 0 ? (
                         <Card className="border-2 border-dashed border-slate-200 bg-slate-50/50 rounded-[2rem] py-16 text-center">
                             <History className="h-12 w-12 text-slate-300 mx-auto mb-4 opacity-20" />
@@ -190,7 +215,70 @@ export function TesoreriaContent() {
                         </div>
                     )}
                 </TabsContent>
+
+                <TabsContent value="docs" className="mt-6 space-y-4">
+                    {bankAccounts.length === 0 ? (
+                        <Card className="border-2 border-dashed border-slate-200 bg-slate-50/50 rounded-[2rem] py-16 text-center">
+                            <Landmark className="h-12 w-12 text-slate-300 mx-auto mb-4 opacity-20" />
+                            <h3 className="text-sm font-black text-slate-400 uppercase tracking-widest">No se encontraron cuentas bancarias activas</h3>
+                            <p className="text-xs text-slate-400 mt-2">Contacte al administrador si cree que esto es un error.</p>
+                        </Card>
+                    ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {bankAccounts.map(account => (
+                                <Card key={account.id} className="border-none shadow-sm bg-white hover:shadow-xl transition-all group cursor-pointer" onClick={() => setSelectedAccount(account)}>
+                                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                        <div className="h-10 w-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center group-hover:bg-emerald-600 group-hover:text-white transition-colors">
+                                            <Landmark className="h-5 w-5" />
+                                        </div>
+                                        {account.evidenceUrls && account.evidenceUrls.length > 0 ? (
+                                            <Badge className="bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border-indigo-200">
+                                                📎 {account.evidenceUrls.length} Docs
+                                            </Badge>
+                                        ) : (
+                                            <Badge variant="outline" className="text-slate-400 border-slate-200">
+                                                Sin Docs
+                                            </Badge>
+                                        )}
+                                    </CardHeader>
+                                    <CardContent>
+                                        <div className="text-lg font-black text-slate-900 group-hover:text-emerald-700 transition-colors">
+                                            {account.bankName}
+                                        </div>
+                                        <p className="text-xs text-slate-500 font-mono mt-1">
+                                            {account.accountNumber}
+                                        </p>
+                                        <div className="mt-4 pt-4 border-t border-slate-50 flex items-center justify-between text-[10px] font-bold uppercase tracking-widest text-emerald-600">
+                                            <span>Click para gestionar</span>
+                                            <ArrowLeft className="h-3 w-3 rotate-180" />
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            ))}
+                        </div>
+                    )}
+                </TabsContent>
             </Tabs>
+
+            {/* Dialog for Managing Bank Documents */}
+            <Dialog open={!!selectedAccount} onOpenChange={(open) => !open && setSelectedAccount(null)}>
+                <DialogContent className="sm:max-w-2xl">
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2 text-xl font-black uppercase text-slate-800">
+                            <Landmark className="h-6 w-6 text-emerald-600" />
+                            {selectedAccount?.bankName} - Documentación
+                        </DialogTitle>
+                    </DialogHeader>
+                    {selectedAccount && (
+                        <div className="mt-2">
+                            <BankAccountDocuments
+                                accountId={selectedAccount.id}
+                                initialUrls={selectedAccount.evidenceUrls || []}
+                            />
+                        </div>
+                    )}
+                </DialogContent>
+            </Dialog>
         </div>
     )
 }
