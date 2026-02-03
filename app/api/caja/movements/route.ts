@@ -55,8 +55,32 @@ export async function POST(req: NextRequest) {
             where: {
                 usuarioId: userId,
                 estado: "ABIERTO"
+            },
+            include: {
+                movements: true
             }
         })
+
+        if (!activeClosure) {
+            return new NextResponse("Debe realizar la Apertura de Caja antes de registrar movimientos.", { status: 400 })
+        }
+
+        // Validate sufficient funds for Egresos
+        if (tipo === "EGRESO") {
+            const totalIngresos = activeClosure.movements
+                .filter(m => m.tipo === "INGRESO")
+                .reduce((acc, m) => acc + Number(m.monto), 0)
+
+            const totalEgresos = activeClosure.movements
+                .filter(m => m.tipo === "EGRESO")
+                .reduce((acc, m) => acc + Number(m.monto), 0)
+
+            const currentBalance = Number(activeClosure.montoInicial) + totalIngresos - totalEgresos
+
+            if (Number(monto) > currentBalance) {
+                return new NextResponse(`Fondos insuficientes. Saldo disponible: C$ ${currentBalance.toLocaleString('es-NI')}`, { status: 400 })
+            }
+        }
 
         const movement = await prisma.cashMovement.create({
             data: {
@@ -66,7 +90,7 @@ export async function POST(req: NextRequest) {
                 referencia,
                 institucion: institucion || "GOBIERNO",
                 usuarioId: userId,
-                closureId: activeClosure?.id
+                closureId: activeClosure.id
             }
         })
 

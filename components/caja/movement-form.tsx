@@ -31,7 +31,13 @@ const formSchema = z.object({
     institucion: z.enum(["GOBIERNO", "CONCEJO"]),
 })
 
-export function MovementForm({ onSuccess }: { onSuccess: () => void }) {
+export function MovementForm({
+    onSuccess,
+    defaultValues
+}: {
+    onSuccess: () => void,
+    defaultValues?: Partial<z.infer<typeof formSchema>>
+}) {
     const [loading, setLoading] = useState(false)
 
     const form = useForm<z.infer<typeof formSchema>>({
@@ -42,6 +48,7 @@ export function MovementForm({ onSuccess }: { onSuccess: () => void }) {
             descripcion: "",
             referencia: "",
             institucion: "GOBIERNO",
+            ...defaultValues
         },
     })
 

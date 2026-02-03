@@ -1,3 +1,6 @@
+
+"use client"
+
 import { useState, useEffect } from "react"
 import {
     Table,
@@ -15,6 +18,7 @@ import { Lock, Unlock, FileBarChart } from "lucide-react"
 import { toast } from "sonner"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { CashOpeningForm } from "./cash-opening-form"
+import { ClosureDetailsDialog } from "./closure-details-dialog"
 
 export function ClosuresTable() {
     const [closures, setClosures] = useState([])
@@ -22,6 +26,7 @@ export function ClosuresTable() {
     const [activeClosure, setActiveClosure] = useState<any>(null)
     const [showOpeningDialog, setShowOpeningDialog] = useState(false)
     const [isSubmitting, setIsSubmitting] = useState(false)
+    const [viewClosure, setViewClosure] = useState<any>(null)
 
     const fetchClosures = async () => {
         try {
@@ -49,16 +54,13 @@ export function ClosuresTable() {
     const confirmOpenClosure = async (total: number, details: any) => {
         setIsSubmitting(true)
         try {
-            // Include details (breakdown) in the body if the API supports it. 
-            // Currently API expects { action: 'open', montoInicial: number }
-            // We'll send the details as well, assuming the API might store them or we'll update API later.
             const res = await fetch("/api/caja/closures", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     action: 'open',
                     montoInicial: total,
-                    detallesApertura: details // Sending extra data
+                    detallesApertura: details
                 })
             })
             if (res.ok) {
@@ -154,7 +156,12 @@ export function ClosuresTable() {
                                         </Badge>
                                     </TableCell>
                                     <TableCell>
-                                        <Button variant="ghost" size="sm" className="gap-2">
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            className="gap-2"
+                                            onClick={() => setViewClosure(c)}
+                                        >
                                             <FileBarChart className="h-4 w-4" />
                                             Reporte
                                         </Button>
@@ -178,6 +185,12 @@ export function ClosuresTable() {
                     />
                 </DialogContent>
             </Dialog>
+
+            <ClosureDetailsDialog
+                closure={viewClosure}
+                isOpen={!!viewClosure}
+                onClose={() => setViewClosure(null)}
+            />
         </div>
     )
 }

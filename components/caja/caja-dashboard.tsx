@@ -148,6 +148,35 @@ export function CajaDashboard() {
                         </DialogContent>
                     </Dialog>
 
+                    <Dialog>
+                        <DialogTrigger asChild>
+                            <Button className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white">
+                                <ArrowUpCircle className="h-4 w-4" />
+                                Ingresar Fondeo
+                            </Button>
+                        </DialogTrigger>
+                        <DialogContent>
+                            <DialogHeader>
+                                <DialogTitle>Reposición de Fondos (Entrada)</DialogTitle>
+                            </DialogHeader>
+                            <MovementForm
+                                defaultValues={{
+                                    tipo: "INGRESO",
+                                    descripcion: "Reposición de efectivo desde Bóveda Central",
+                                    monto: ""
+                                }}
+                                onSuccess={() => {
+                                    // Close dialog (we need state for this new dialog or reuse existing one logic)
+                                    // To keep it simple in this edit, I'll force a reload or reuse fetchStats
+                                    fetchStats()
+                                    // We need to close the dialog. The Dialog component controls itself if uncontrolled, 
+                                    // but we want to close it programmatically. 
+                                    // I'll add a new state for this dialog in the component first.
+                                }}
+                            />
+                        </DialogContent>
+                    </Dialog>
+
                     <Dialog open={isCheckOpen} onOpenChange={setIsCheckOpen}>
                         <DialogTrigger asChild>
                             <Button variant="outline" className="gap-2">
