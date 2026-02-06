@@ -11,6 +11,7 @@ import {
     Printer,
     ArrowRight
 } from "lucide-react"
+import Link from "next/link"
 
 export default function HRReportsPage() {
     const reportCategories = [
@@ -18,7 +19,7 @@ export default function HRReportsPage() {
             title: "Informes de Personal",
             description: "Listados y estadísticas de empleados",
             reports: [
-                { name: "Listado Maestro de Empleados", icon: Users },
+                { name: "Listado Maestro de Empleados", icon: Users, href: "/rrhh/reports/master-list" },
                 { name: "Distribución por Departamentos", icon: FileBarChart },
                 { name: "Contratos por Vencer", icon: FileText },
             ]
@@ -64,9 +65,18 @@ export default function HRReportsPage() {
                                         <Button variant="ghost" size="icon" className="h-8 w-8">
                                             <Download className="h-4 w-4" />
                                         </Button>
-                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-primary">
-                                            <ArrowRight className="h-4 w-4" />
-                                        </Button>
+                                        {/* Dynamic Link if href exists */}
+                                        {(report as any).href ? (
+                                            <Link href={(report as any).href}>
+                                                <Button variant="ghost" size="icon" className="h-8 w-8 text-primary">
+                                                    <ArrowRight className="h-4 w-4" />
+                                                </Button>
+                                            </Link>
+                                        ) : (
+                                            <Button variant="ghost" size="icon" className="h-8 w-8 text-primary">
+                                                <ArrowRight className="h-4 w-4" />
+                                            </Button>
+                                        )}
                                     </div>
                                 </div>
                             ))}

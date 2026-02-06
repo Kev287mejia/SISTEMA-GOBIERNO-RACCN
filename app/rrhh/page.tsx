@@ -31,15 +31,26 @@ export default function RRHHDashboard() {
   })
 
   useEffect(() => {
-    // TODO: Fetch real stats from API
-    setStats({
-      totalEmpleados: 47,
-      empleadosActivos: 45,
-      cargosDefinidos: 12,
-      nominaPendiente: 2
-    })
+    fetchStats()
     fetchAnalytics()
   }, [])
+
+  const fetchStats = async () => {
+    try {
+      const res = await fetch("/api/hr/statistics")
+      if (res.ok) {
+        const data = await res.json()
+        setStats({
+          totalEmpleados: data.totalEmployees || 0,
+          empleadosActivos: data.activeContracts || 0,
+          cargosDefinidos: data.totalPositions || 0,
+          nominaPendiente: data.pendingPayrolls || 0
+        })
+      }
+    } catch (error) {
+      console.error("Error loading HR stats:", error)
+    }
+  }
 
   const [analyticsData, setAnalyticsData] = useState({ distributionData: [], payrollTrend: [] })
   const [loadingAnalytics, setLoadingAnalytics] = useState(true)
@@ -109,6 +120,23 @@ export default function RRHHDashboard() {
       actions: [
         { label: "Procesar Nómina", icon: DollarSign },
         { label: "Historial", icon: Clock }
+      ]
+    },
+    {
+      title: "Control de Asistencia",
+      description: "Gestión de vacaciones, permisos y deducciones",
+      icon: Calendar,
+      href: "/rrhh/leaves",
+      color: "from-rose-500 to-rose-600",
+      bgColor: "bg-rose-50",
+      iconColor: "text-rose-600",
+      stats: [
+        { label: "Ausencias del Mes", value: 0, icon: AlertCircle }, // TODO: Connect real stat
+        { label: "En Vacaciones", value: 0, icon: Users }
+      ],
+      actions: [
+        { label: "Registrar Ausencia", icon: UserPlus },
+        { label: "Ver Calendario", icon: Calendar }
       ]
     },
     {

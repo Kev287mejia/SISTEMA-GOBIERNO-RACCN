@@ -168,9 +168,10 @@ export function PayrollDetailDialog({ payroll, open, onOpenChange }: PayrollDeta
                                     <thead className="bg-gray-50/80 border-b border-gray-100">
                                         <tr className="text-[10px] font-black uppercase text-gray-400">
                                             <th className="px-6 py-4 text-left">Funcionario</th>
-                                            <th className="px-6 py-4 text-center">Salario Base</th>
-                                            <th className="px-6 py-4 text-center">Bonos (+)</th>
-                                            <th className="px-6 py-4 text-center text-red-500">Deducciones (-)</th>
+                                            <th className="px-3 py-4 text-center">Salario Base</th>
+                                            <th className="px-3 py-4 text-center text-amber-600">INSS Lab. (7%)</th>
+                                            <th className="px-3 py-4 text-center text-amber-600">IR</th>
+                                            <th className="px-3 py-4 text-center text-red-500">Total Ded.</th>
                                             <th className="px-6 py-4 text-right">Monto Neto</th>
                                         </tr>
                                     </thead>
@@ -187,15 +188,16 @@ export function PayrollDetailDialog({ payroll, open, onOpenChange }: PayrollDeta
                                                         </span>
                                                     </div>
                                                 </td>
-                                                <td className="px-6 py-4 text-center font-bold text-gray-600">
+                                                <td className="px-3 py-4 text-center font-bold text-gray-600">
                                                     {formatCurrency(Number(item.salarioBase))}
                                                 </td>
-                                                <td className="px-6 py-4 text-center">
-                                                    <span className="text-emerald-600 font-black text-xs">
-                                                        +{formatCurrency(Number(item.bonificaciones))}
-                                                    </span>
+                                                <td className="px-3 py-4 text-center text-xs text-amber-700 font-medium">
+                                                    -{formatCurrency(Number(item.inssLaboral || 0))}
                                                 </td>
-                                                <td className="px-6 py-4 text-center">
+                                                <td className="px-3 py-4 text-center text-xs text-amber-700 font-medium">
+                                                    -{formatCurrency(Number(item.ir || 0))}
+                                                </td>
+                                                <td className="px-3 py-4 text-center">
                                                     <span className="text-red-500 font-black text-xs">
                                                         -{formatCurrency(Number(item.deducciones))}
                                                     </span>

@@ -51,6 +51,13 @@ model User {
   pettyCashesResponsible    PettyCash[]             @relation("PettyCashResponsible")
   bankReconciliations       BankReconciliation[]
   
+  // Petty Cash Workflow Relations
+  approvedMovements       PettyCashMovement[]     @relation("MovementApprover")
+  authorizedMovements     PettyCashMovement[]     @relation("MovementAuthorizer")
+  paidMovements           PettyCashMovement[]     @relation("MovementPayer")
+  liquidatedMovements     PettyCashMovement[]     @relation("MovementLiquidator")
+  approvedLeaves          LeaveRequest[]          @relation("LeaveApprover")
+
   // Workflow Audit Relations
   budgetApprovedChecks    Check[] @relation("BudgetApprovedChecks")
   budgetRejectedChecks    Check[] @relation("BudgetRejectedChecks")
@@ -149,6 +156,7 @@ model AccountingEntry {
   @@index([institucion, deletedAt, tipo])
   @@index([cuentaContable, tipo, estado])
   @@index([estado, deletedAt])
+  @@index([estado, fecha])
   @@map("accounting_entries")
 }
 
@@ -298,6 +306,7 @@ model Employee {
   contratos          Contract[]
   hrRecords          HRRecord[]
   payrollItems       PayrollItem[]
+  vacaciones         LeaveRequest[]
 
   @@index([cedula])
   @@index([estado])
@@ -444,6 +453,11 @@ model PayrollItem {
   salarioBase    Decimal  @db.Decimal(15, 2)
   bonificaciones Decimal  @default(0) @db.Decimal(15, 2)
   deducciones    Decimal  @default(0) @db.Decimal(15, 2)
+  inssLaboral    Decimal  @default(0) @db.Decimal(15, 2)
+  ir             Decimal  @default(0) @db.Decimal(15, 2)
+  inssPatronal   Decimal  @default(0) @db.Decimal(15, 2)
+  inatec         Decimal  @default(0) @db.Decimal(15, 2)
+  otrasDeducciones Decimal @default(0) @db.Decimal(15, 2)
   totalNeto      Decimal  @db.Decimal(15, 2)
   detalles       String?
   createdAt      DateTime @default(now())
@@ -483,7 +497,7 @@ model PettyCashMovement {
   fecha             DateTime              @default(now())
   descripcion       String
   referencia        String?
-  estado            MovementStatus        @default(PENDIENTE_VALIDACION)
+  estado            MovementStatus        @default(SOLICITADO)
   usuarioId         String
   accountingEntryId String?               @unique
   inconsistente     Boolean               @default(false)
@@ -491,9 +505,22 @@ model PettyCashMovement {
   createdAt         DateTime              @default(now())
   updatedAt         DateTime              @updatedAt
   evidenciaUrls     String[]              @default([])
+  
+  // Workflow Approvals
+  approvedById      String?
+  authorizedById    String?
+  paidById          String?
+  liquidatedById    String?
+  rejectionReason   String?
+
   accountingEntry   AccountingEntry?      @relation(fields: [accountingEntryId], references: [id])
   pettyCash         PettyCash             @relation(fields: [pettyCashId], references: [id])
   usuario           User                  @relation("PettyCashMovementCreator", fields: [usuarioId], references: [id])
+  
+  approvedBy        User?                 @relation("MovementApprover", fields: [approvedById], references: [id])
+  authorizedBy      User?                 @relation("MovementAuthorizer", fields: [authorizedById], references: [id])
+  paidBy            User?                 @relation("MovementPayer", fields: [paidById], references: [id])
+  liquidatedBy      User?                 @relation("MovementLiquidator", fields: [liquidatedById], references: [id])
 
   @@index([pettyCashId])
   @@index([usuarioId])
@@ -605,6 +632,8 @@ model Check {
   @@index([numero])
   @@index([tipo])
   @@index([estado])
+  @@index([estado, fecha])
+  @@index([banco, estado])
   @@map("checks")
 }
 
@@ -625,6 +654,7 @@ model CashClosure {
 
   @@index([usuarioId])
   @@index([estado])
+  @@index([estado, fechaInicio])
   @@map("cash_closures")
 }
 
@@ -815,12 +845,7 @@ enum PettyCashMovementType {
   AJUSTE
 }
 
-enum MovementStatus {
-  PENDIENTE_VALIDACION
-  VALIDADO
-  RECHAZADO
-  ANULADO
-}
+
 
 enum EntityType {
   PROVEEDOR
@@ -943,4 +968,59 @@ enum NotificationType {
   BANK_ALERT
   APPROVAL_REQUIRED
   SYSTEM
+}
+
+enum MovementStatus {
+  PENDIENTE_VALIDACION
+  VALIDADO
+  SOLICITADO
+  APROBADO_JEFE
+  AUTORIZADO
+  ENTREGADO
+  LIQUIDADO
+  RECHAZADO
+  ANULADO
+}
+
+model LeaveRequest {
+  id          String      @id @default(cuid())
+  empleadoId  String
+  tipo        LeaveType
+  fechaInicio DateTime
+  fechaFin    DateTime
+  dias        Int         @default(1)
+  motivo      String?
+  estado      LeaveStatus @default(PENDIENTE)
+  conGoceSueldo Boolean   @default(true) 
+  
+  // Auditoria
+  aprobadoPorId String?
+  fechaAprobacion DateTime?
+  
+  archivoUrl  String? // Justificante médico o carta
+
+  empleado    Employee    @relation(fields: [empleadoId], references: [id])
+  aprobadoPor User?       @relation("LeaveApprover", fields: [aprobadoPorId], references: [id])
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([empleadoId])
+  @@index([estado])
+  @@map("leave_requests")
+}
+
+enum LeaveType {
+  VACACIONES
+  ENFERMEDAD
+  PERMISO_PERSONAL
+  MATERNIDAD
+  OTROS
+}
+
+enum LeaveStatus {
+  PENDIENTE
+  APROBADO
+  RECHAZADO
+  CANCELADO
 }

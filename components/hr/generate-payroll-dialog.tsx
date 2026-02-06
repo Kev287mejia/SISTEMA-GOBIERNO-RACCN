@@ -117,24 +117,8 @@ export function GeneratePayrollDialog({ open, onOpenChange, onSuccess }: Generat
 
         setLoading(true)
         try {
-            const ssPercent = configs.hr_ss_percent || 0
-            const items = employees.map(emp => {
-                const salarioBase = Number(emp.contratos[0].salarioBase)
-                const deducciones = salarioBase * (ssPercent / 100)
-                const totalNeto = salarioBase - deducciones
-
-                return {
-                    empleadoId: emp.id,
-                    salarioBase,
-                    bonificaciones: 0,
-                    deducciones,
-                    totalNeto,
-                    detalles: `Pago ordinario - Ded. SS (${ssPercent}%)`
-                }
-            })
-
-            const totalMonto = items.reduce((sum, item) => sum + item.totalNeto, 0)
-
+            // Delegar cálculo al Servidor (PRO Mode)
+            // No enviamos 'items', solo la metadata para activar generateAutomaticPayroll
             const res = await fetch("/api/hr/payroll", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -142,16 +126,13 @@ export function GeneratePayrollDialog({ open, onOpenChange, onSuccess }: Generat
                     mes: Number(formData.mes),
                     anio: Number(formData.anio),
                     descripcion: formData.descripcion,
-                    totalMonto,
-                    items: {
-                        create: items
-                    }
+                    // totalMonto se calculará en backend
                 })
             })
 
             if (res.ok) {
                 toast.success("Nómina generada exitosamente", {
-                    description: `Se han procesado ${items.length} pagos para el periodo ${MONTHS[formData.mes - 1]} ${formData.anio}.`
+                    description: `La nómina para ${MONTHS[formData.mes - 1]} ${formData.anio} se está procesando en el servidor.`
                 })
                 onSuccess()
                 onOpenChange(false)
@@ -300,7 +281,7 @@ export function GeneratePayrollDialog({ open, onOpenChange, onSuccess }: Generat
                                                 <p className="text-[10px] text-gray-400 font-medium">
                                                     {employeesMissingBank.length > 0
                                                         ? 'Corrija los expedientes de personal para habilitar la generación.'
-                                                        : `Basado en ${employees.length} contratos con ${configs.hr_ss_percent}% de deducción SS.`
+                                                        : 'Se aplicarán automáticamente deducciones de Ley (INSS, IR, INATEC) y validaciones de cuenta.'
                                                     }
                                                 </p>
                                             </div>

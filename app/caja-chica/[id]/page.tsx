@@ -7,15 +7,15 @@ import { Badge } from "@/components/ui/badge"
 import {
     ArrowLeft,
     AlertCircle,
-    MessageSquare,
     CheckCircle2,
-    Clock,
     User as UserIcon,
     History,
     Edit3,
-    Printer
+    Printer,
+    Eye
 } from "lucide-react"
 import { PettyCorrectionDialog } from "@/components/caja-chica/correction-dialog"
+import { PettyMovementDetailDialog } from "@/components/caja-chica/petty-movement-detail-dialog"
 import { useRouter } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { toast } from "sonner"
@@ -28,6 +28,7 @@ export default function PettyCashHistoryPage({ params }: { params: { id: string 
     const [loading, setLoading] = useState(true)
     const [selectedMovement, setSelectedMovement] = useState<any>(null)
     const [isCorrectionOpen, setIsCorrectionOpen] = useState(false)
+    const [isDetailOpen, setIsDetailOpen] = useState(false)
 
     const fetchMovements = async () => {
         try {
@@ -44,6 +45,7 @@ export default function PettyCashHistoryPage({ params }: { params: { id: string 
     }
 
     useEffect(() => {
+        // alert(`DEBUG: Cargando historial de caja ID: ${params.id}`)
         fetchMovements()
     }, [params.id])
 
@@ -123,13 +125,28 @@ export default function PettyCashHistoryPage({ params }: { params: { id: string 
                                                     </div>
                                                     <Badge className={`text-[9px] uppercase font-black ${move.estado === 'VALIDADO' ? 'bg-emerald-50 text-emerald-600' :
                                                         move.estado === 'PENDIENTE_VALIDACION' ? 'bg-amber-50 text-amber-600' :
-                                                            'bg-slate-100 text-slate-500'
+                                                            move.estado === 'RECHAZADO' ? 'bg-red-50 text-red-600' :
+                                                                move.estado === 'ENTREGADO' ? 'bg-blue-50 text-blue-600' :
+                                                                    move.estado === 'LIQUIDADO' ? 'bg-emerald-100 text-emerald-800' :
+                                                                        'bg-slate-100 text-slate-500'
                                                         } border-none`}>
-                                                        {move.estado === 'PENDIENTE_VALIDACION' ? 'Pendiente General' : move.estado}
+                                                        {move.estado === 'PENDIENTE_VALIDACION' ? 'Pendiente' : move.estado}
                                                     </Badge>
                                                 </td>
                                                 <td className="px-6 py-4 text-right">
                                                     <div className="flex justify-end gap-2">
+                                                        <Button
+                                                            size="sm"
+                                                            variant="ghost"
+                                                            onClick={() => {
+                                                                setSelectedMovement(move)
+                                                                setIsDetailOpen(true)
+                                                            }}
+                                                            className="h-8 w-8 p-0 text-blue-600 hover:text-blue-800 hover:bg-blue-50"
+                                                            title="Ver Detalle y Flujo"
+                                                        >
+                                                            <Eye className="h-4 w-4" />
+                                                        </Button>
                                                         <Button
                                                             size="sm"
                                                             variant="ghost"
@@ -173,6 +190,13 @@ export default function PettyCashHistoryPage({ params }: { params: { id: string 
                     </Card>
                 </div>
             </div>
+
+            <PettyMovementDetailDialog
+                open={isDetailOpen}
+                onOpenChange={setIsDetailOpen}
+                movement={selectedMovement}
+                onUpdate={fetchMovements}
+            />
 
             <PettyCorrectionDialog
                 open={isCorrectionOpen}

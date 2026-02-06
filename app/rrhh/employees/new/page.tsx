@@ -365,10 +365,22 @@ export default function NewEmployeePage() {
                                         />
                                     </div>
                                     <div className="flex items-end pb-1">
-                                        <div className="bg-indigo-50 p-3 rounded-xl border border-indigo-100 w-full flex items-center gap-2">
-                                            <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-                                            <span className="text-[10px] font-black text-indigo-900 uppercase tracking-tighter">Cálculo INSS/IR habilitado</span>
-                                        </div>
+                                        {formData.tipoContrato === 'INDEFINIDO' || formData.tipoContrato === 'FIJO' ? (
+                                            <div className="bg-emerald-50 p-3 rounded-xl border border-emerald-100 w-full flex items-center gap-2 transition-all">
+                                                <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                                                <span className="text-[10px] font-black text-emerald-900 uppercase tracking-tighter">Cálculo INSS/IR habilitado</span>
+                                            </div>
+                                        ) : formData.tipoContrato === 'SERVICIOS' ? (
+                                            <div className="bg-amber-50 p-3 rounded-xl border border-amber-100 w-full flex items-center gap-2 transition-all">
+                                                <div className="h-2 w-2 rounded-full bg-amber-500" />
+                                                <span className="text-[10px] font-black text-amber-900 uppercase tracking-tighter">Régimen Servicios (Ret. 10%)</span>
+                                            </div>
+                                        ) : (
+                                            <div className="bg-slate-50 p-3 rounded-xl border border-slate-100 w-full flex items-center gap-2 transition-all">
+                                                <div className="h-2 w-2 rounded-full bg-slate-400" />
+                                                <span className="text-[10px] font-black text-slate-500 uppercase tracking-tighter">Exento de Deducciones</span>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             </CardContent>

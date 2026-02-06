@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import Link from "next/link"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import {
@@ -192,9 +193,9 @@ export function CreditoDashboard() {
                                                     </DialogContent>
                                                 </Dialog>
                                                 <Button size="sm" variant="ghost" className="gap-2 text-slate-600" asChild>
-                                                    <a href={`/caja-chica/${box.id}`}>
-                                                        <History className="h-3 w-3" /> Historial
-                                                    </a>
+                                                    <Link href={`/caja-chica/${box.id}`}>
+                                                        <History className="h-3 w-3" /> Historial <span className="text-[8px] opacity-50">({box.id.slice(-4)})</span>
+                                                    </Link>
                                                 </Button>
                                             </div>
                                         </td>

@@ -26,7 +26,7 @@ export default function LoginPage() {
       const result = await signIn("credentials", {
         email,
         password,
-        redirect: false, // Controlamos la redirección manualmente
+        redirect: false,
       })
 
       console.log("Resultado login:", result)
@@ -37,12 +37,12 @@ export default function LoginPage() {
         setLoading(false)
       } else if (result?.ok) {
         console.log("Login exitoso, redirigiendo manual a /dashboard...")
-        // Forzar redirección completa
         window.location.href = "/dashboard"
       } else {
         setError("Respuesta inesperada del servidor")
         setLoading(false)
       }
+
     } catch (error) {
       console.error("Login exception:", error)
       setError("Error de conexión al intentar ingresar")
@@ -51,7 +51,7 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="relative min-h-screen w-full flex items-center justify-center overflow-hidden bg-slate-900">
+    <div id="login-page" className="relative min-h-screen w-full flex items-center justify-center overflow-hidden bg-slate-900">
       {/* Background Image with Parallax effect */}
       <div
         className="absolute inset-0 z-0 bg-cover bg-center bg-no-repeat opacity-40 transform scale-105"

@@ -21,8 +21,13 @@ export async function GET(
             where: { pettyCashId: params.id },
             include: {
                 usuario: {
-                    select: { nombre: true, apellido: true }
+                    select: { nombre: true, apellido: true, email: true }
                 },
+                approvedBy: { select: { nombre: true, apellido: true } },
+                authorizedBy: { select: { nombre: true, apellido: true } },
+                paidBy: { select: { nombre: true, apellido: true } },
+                liquidatedBy: { select: { nombre: true, apellido: true } },
+
                 accountingEntry: {
                     select: { numero: true, estado: true }
                 }
@@ -100,7 +105,7 @@ export async function POST(
                     descripcion,
                     referencia,
                     usuarioId: session.user.id,
-                    estado: 'PENDIENTE_VALIDACION',
+                    estado: 'SOLICITADO',
                     accountingEntryId: accountingId,
                     evidenciaUrls: body.evidenciaUrls || []
                 }

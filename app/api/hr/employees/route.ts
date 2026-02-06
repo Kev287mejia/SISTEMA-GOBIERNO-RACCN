@@ -8,7 +8,7 @@ export async function GET(req: Request) {
   try {
     const session = await getServerSession(authOptions)
 
-    if (!session || (session.user.role !== Role.Admin && session.user.role !== Role.RRHH)) {
+    if (!session || (session.user.role !== Role.Admin && session.user.role !== Role.RRHH && session.user.role !== Role.ContadorGeneral)) {
       return new NextResponse("Unauthorized", { status: 401 })
     }
 
