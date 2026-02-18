@@ -216,9 +216,9 @@ export default function ContabilidadPage() {
     try {
       setError(null)
 
-      // Race condition: Fetch vs 2s Timeout
+      // Race condition: Fetch vs 15s Timeout (Increased from 2s to avoid premature timeouts)
       const fetchPromise = fetch(`/api/accounting-entries?limit=50${showDeleted ? '&includeDeleted=true' : ''}`)
-      const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout")), 2000))
+      const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout")), 15000))
 
       const res: any = await Promise.race([fetchPromise, timeoutPromise])
 

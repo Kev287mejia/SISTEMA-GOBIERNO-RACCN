@@ -24,12 +24,15 @@ import {
   Landmark,
   TrendingUp,
   Target,
+  ShoppingCart,
+  Coins,
 } from "lucide-react"
 
 const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { name: "Contabilidad", href: "/contabilidad", icon: FileText },
   { name: "Inteligencia Financiera", href: "/contabilidad/reportes", icon: TrendingUp },
+  { name: "Tesorería", href: "/tesoreria", icon: Coins },
   { name: "Bancos", href: "/contabilidad/bancos", icon: Landmark },
   { name: "Caja", href: "/caja", icon: Wallet },
   { name: "Caja Chica", href: "/caja-chica", icon: Wallet },
@@ -39,6 +42,7 @@ const navigation = [
   { name: "RRHH", href: "/rrhh", icon: Briefcase },
   { name: "Auditoría", href: "/auditoria", icon: ClipboardList },
   { name: "Reportes Auxiliares", href: "/reportes", icon: BarChart3 },
+  { name: "Compras", href: "/compras", icon: ShoppingCart },
   { name: "Entidades", href: "/entidades", icon: Building2 },
   { name: "Usuarios", href: "/usuarios", icon: Users },
   { name: "Configuración", href: "/configuracion", icon: Settings },

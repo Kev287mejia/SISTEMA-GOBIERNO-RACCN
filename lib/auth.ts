@@ -172,15 +172,20 @@ export const authOptions: NextAuthOptions = {
         })
 
         // Registrar login exitoso en auditoría
-        await prisma.auditLog.create({
-          data: {
-            accion: "LOGIN",
-            entidad: "User",
-            entidadId: user.id,
-            descripcion: `Login exitoso${user.twoFactorEnabled ? ' (2FA)' : ''}`,
-            usuarioId: user.id
-          }
-        })
+        try {
+          await prisma.auditLog.create({
+            data: {
+              accion: "LOGIN",
+              entidad: "User",
+              entidadId: user.id,
+              descripcion: `Login exitoso${user.twoFactorEnabled ? ' (2FA)' : ''}`,
+              usuarioId: user.id
+            }
+          })
+        } catch (auditError) {
+          console.error("Auth: Failed to create audit log", auditError)
+          // Don't block login if audit fails
+        }
 
         console.log(`Auth: Login successful for: ${email} [${user.role}]`)
 
@@ -261,5 +266,17 @@ export const authOptions: NextAuthOptions = {
     strategy: "jwt",
     maxAge: 8 * 60 * 60, // 8 horas
   },
+  debug: process.env.NODE_ENV === "development",
+  cookies: {
+    sessionToken: {
+      name: `next-auth.session-token`,
+      options: {
+        httpOnly: true,
+        sameSite: 'lax',
+        path: '/',
+        secure: process.env.NODE_ENV === 'production'
+      }
+    }
+  },
   secret: process.env.NEXTAUTH_SECRET,
-}
+};

@@ -14,3 +14,12 @@ export function formatCurrency(amount: any): string {
   const formatted = numAmount.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",")
   return `C$${formatted}`
 }
+
+export function formatDate(date: string | Date): string {
+  if (!date) return ""
+  return new Date(date).toLocaleDateString("es-NI", {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric'
+  })
+}

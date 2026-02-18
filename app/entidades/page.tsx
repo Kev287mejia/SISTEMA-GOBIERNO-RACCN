@@ -23,12 +23,17 @@ import { Input } from "@/components/ui/input"
 import { CreateEntityDialog } from "@/components/entities/create-entity-dialog"
 import Link from "next/link"
 
+import { useSearchParams } from "next/navigation"
+
 export default function EntidadesPage() {
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const [entidades, setEntidades] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState("")
   const [mounted, setMounted] = useState(false)
+
+  const searchParams = useSearchParams()
+  const filterType = searchParams.get('type')
 
   const fetchEntidades = async () => {
     setLoading(true)
@@ -50,10 +55,14 @@ export default function EntidadesPage() {
     fetchEntidades()
   }, [])
 
-  const filteredEntities = entidades.filter(e =>
-    e.nombre.toLowerCase().includes(search.toLowerCase()) ||
-    (e.ruc && e.ruc.toLowerCase().includes(search.toLowerCase()))
-  )
+  const filteredEntities = entidades.filter(e => {
+    const matchesSearch = e.nombre.toLowerCase().includes(search.toLowerCase()) ||
+      (e.ruc && e.ruc.toLowerCase().includes(search.toLowerCase()))
+
+    if (filterType && e.tipo !== filterType) return false
+
+    return matchesSearch
+  })
 
   const stats = {
     total: entidades.length,

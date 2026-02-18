@@ -30,44 +30,42 @@ model User {
   twoFactorSecret           String?
   deniedModules             String[]                @default([])
   sessionVersion            Int                     @default(1)
+  accountingClosures        AccountingClosure[]
   approvedEntries           AccountingEntry[]       @relation("EntryApprover")
   createdEntries            AccountingEntry[]       @relation("EntryCreator")
   accountingObservations    AccountingObservation[]
   accounts                  Account[]
   auditLogs                 AuditLog[]
+  bankReconciliations       BankReconciliation[]
   budgetExecutions          BudgetExecution[]
   approvedBudgets           BudgetItem[]            @relation("BudgetApprover")
   createdBudgets            BudgetItem[]            @relation("BudgetCreator")
   cashClosures              CashClosure[]
   cashMovements             CashMovement[]
+  accountedChecks           Check[]                 @relation("CheckAccountedBy")
+  budgetApprovedChecks      Check[]                 @relation("BudgetApprovedChecks")
+  budgetRejectedChecks      Check[]                 @relation("BudgetRejectedChecks")
+  issuedChecks              Check[]                 @relation("CheckIssuedBy")
+  paidChecks                Check[]                 @relation("CheckPaidBy")
+  preCheckApprovedChecks    Check[]                 @relation("PreCheckApprovedChecks")
+  preCheckRejectedChecks    Check[]                 @relation("PreCheckRejectedChecks")
   checks                    Check[]
   hrRecords                 HRRecord[]
   inventoryItemsCreated     InventoryItem[]         @relation("InventoryCreator")
   inventoryRecords          InventoryTransaction[]
+  approvedLeaves            LeaveRequest[]          @relation("LeaveApprover")
   notifications             Notification[]
   payrolls                  Payroll[]
   auditsRealized            PettyCashAudit[]
+  approvedMovements         PettyCashMovement[]     @relation("MovementApprover")
+  authorizedMovements       PettyCashMovement[]     @relation("MovementAuthorizer")
+  liquidatedMovements       PettyCashMovement[]     @relation("MovementLiquidator")
+  paidMovements             PettyCashMovement[]     @relation("MovementPayer")
   pettyCashMovementsCreated PettyCashMovement[]     @relation("PettyCashMovementCreator")
   pettyCashesResponsible    PettyCash[]             @relation("PettyCashResponsible")
-  bankReconciliations       BankReconciliation[]
-  
-  // Petty Cash Workflow Relations
-  approvedMovements       PettyCashMovement[]     @relation("MovementApprover")
-  authorizedMovements     PettyCashMovement[]     @relation("MovementAuthorizer")
-  paidMovements           PettyCashMovement[]     @relation("MovementPayer")
-  liquidatedMovements     PettyCashMovement[]     @relation("MovementLiquidator")
-  approvedLeaves          LeaveRequest[]          @relation("LeaveApprover")
-
-  // Workflow Audit Relations
-  budgetApprovedChecks    Check[] @relation("BudgetApprovedChecks")
-  budgetRejectedChecks    Check[] @relation("BudgetRejectedChecks")
-  preCheckApprovedChecks  Check[] @relation("PreCheckApprovedChecks")
-  preCheckRejectedChecks  Check[] @relation("PreCheckRejectedChecks")
-  paidChecks              Check[] @relation("CheckPaidBy")
-  accountedChecks         Check[] @relation("CheckAccountedBy")
-  issuedChecks            Check[] @relation("CheckIssuedBy")
-  accountingClosures      AccountingClosure[]
-  
+  purchaseOrdersAuthorized  PurchaseOrder[]         @relation("OrderApprover")
+  purchaseOrdersCreated     PurchaseOrder[]         @relation("OrderCreator")
+  purchaseRequests          PurchaseRequest[]       @relation("RequestSolicitor")
   sessions                  Session[]
 
   @@index([email])
@@ -135,15 +133,15 @@ model AccountingEntry {
   createdAt             DateTime                @default(now())
   updatedAt             DateTime                @updatedAt
   evidenciaUrls         String[]                @default([])
+  budgetItemId          String?
+  renglonGasto          String?
   aprobadoPor           User?                   @relation("EntryApprover", fields: [aprobadoPorId], references: [id])
+  budgetItem            BudgetItem?             @relation("BudgetToEntry", fields: [budgetItemId], references: [id])
   creadoPor             User                    @relation("EntryCreator", fields: [creadoPorId], references: [id])
   observations          AccountingObservation[]
   check                 Check?
   inventoryTransactions InventoryTransaction[]
   pettyCashMovement     PettyCashMovement?
-  budgetItemId          String?
-  budgetItem            BudgetItem?             @relation("BudgetToEntry", fields: [budgetItemId], references: [id])
-  renglonGasto          String?
 
   @@index([numero])
   @@index([tipo])
@@ -161,30 +159,31 @@ model AccountingEntry {
 }
 
 model BudgetItem {
-  id              String            @id @default(cuid())
-  codigo          String            @unique
-  nombre          String
-  descripcion     String?
-  categoria       String
-  anio            Int
-  montoAsignado   Decimal           @db.Decimal(15, 2)
-  montoEjecutado  Decimal           @default(0) @db.Decimal(15, 2)
-  montoDisponible Decimal           @db.Decimal(15, 2)
-  estado          BudgetStatus      @default(PLANIFICADO)
-  tipoGasto       BudgetType        @default(FUNCIONAMIENTO)
-  centroRegional  RegionalCenter    @default(BILWI)
-  fechaInicio     DateTime?
-  fechaFin        DateTime?
-  creadoPorId     String
-  aprobadoPorId   String?
-  deletedAt       DateTime?
-  createdAt       DateTime          @default(now())
-  updatedAt       DateTime          @updatedAt
-  executions      BudgetExecution[]
-  checks          Check[]
+  id                String            @id @default(cuid())
+  codigo            String            @unique
+  nombre            String
+  descripcion       String?
+  categoria         String
+  anio              Int
+  montoAsignado     Decimal           @db.Decimal(15, 2)
+  montoEjecutado    Decimal           @default(0) @db.Decimal(15, 2)
+  montoDisponible   Decimal           @db.Decimal(15, 2)
+  estado            BudgetStatus      @default(PLANIFICADO)
+  tipoGasto         BudgetType        @default(FUNCIONAMIENTO)
+  centroRegional    RegionalCenter    @default(BILWI)
+  fechaInicio       DateTime?
+  fechaFin          DateTime?
+  creadoPorId       String
+  aprobadoPorId     String?
+  deletedAt         DateTime?
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
   accountingEntries AccountingEntry[] @relation("BudgetToEntry")
-  aprobadoPor     User?             @relation("BudgetApprover", fields: [aprobadoPorId], references: [id])
-  creadoPor       User              @relation("BudgetCreator", fields: [creadoPorId], references: [id])
+  executions        BudgetExecution[]
+  aprobadoPor       User?             @relation("BudgetApprover", fields: [aprobadoPorId], references: [id])
+  creadoPor         User              @relation("BudgetCreator", fields: [creadoPorId], references: [id])
+  checks            Check[]
+  purchaseOrders    PurchaseOrder[]
 
   @@index([codigo])
   @@index([categoria])
@@ -205,10 +204,10 @@ model BudgetExecution {
   fecha        DateTime   @default(now())
   descripcion  String
   referencia   String?
-  centroCosto  String?
   usuarioId    String
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
+  centroCosto  String?
   budgetItem   BudgetItem @relation(fields: [budgetItemId], references: [id])
   usuario      User       @relation(fields: [usuarioId], references: [id])
 
@@ -237,6 +236,7 @@ model InventoryItem {
   creadoPorId   String?
   creadoPor     User?                  @relation("InventoryCreator", fields: [creadoPorId], references: [id])
   transacciones InventoryTransaction[]
+  purchaseItems PurchaseOrderItem[]
 
   @@index([codigo])
   @@index([categoria])
@@ -276,11 +276,11 @@ model InventoryTransaction {
 }
 
 model Employee {
-  id                 String        @id @default(cuid())
-  codigo             String?       @unique
+  id                 String         @id @default(cuid())
+  codigo             String?        @unique
   nombre             String
   apellido           String
-  cedula             String        @unique
+  cedula             String         @unique
   email              String?
   telefono           String?
   direccion          String?
@@ -288,25 +288,25 @@ model Employee {
   genero             String?
   estadoCivil        String?
   fechaIngreso       DateTime
-  estado             String        @default("ACTIVO")
+  estado             String         @default("ACTIVO")
   tipoSangre         String?
   banco              String?
   tipoCuenta         String?
   numeroCuenta       String?
   deletedAt          DateTime?
-  createdAt          DateTime      @default(now())
-  updatedAt          DateTime      @updatedAt
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
   contactoEmergencia String?
-  hijos              Int?          @default(0)
-  inss               String?       @unique
+  hijos              Int?           @default(0)
+  inss               String?        @unique
   nivelAcademico     String?
   profesion          String?
-  ruc                String?       @unique
+  ruc                String?        @unique
   telefonoEmergencia String?
   contratos          Contract[]
   hrRecords          HRRecord[]
-  payrollItems       PayrollItem[]
   vacaciones         LeaveRequest[]
+  payrollItems       PayrollItem[]
 
   @@index([cedula])
   @@index([estado])
@@ -447,23 +447,23 @@ model Payroll {
 }
 
 model PayrollItem {
-  id             String   @id @default(cuid())
-  nominaId       String
-  empleadoId     String
-  salarioBase    Decimal  @db.Decimal(15, 2)
-  bonificaciones Decimal  @default(0) @db.Decimal(15, 2)
-  deducciones    Decimal  @default(0) @db.Decimal(15, 2)
-  inssLaboral    Decimal  @default(0) @db.Decimal(15, 2)
-  ir             Decimal  @default(0) @db.Decimal(15, 2)
-  inssPatronal   Decimal  @default(0) @db.Decimal(15, 2)
-  inatec         Decimal  @default(0) @db.Decimal(15, 2)
-  otrasDeducciones Decimal @default(0) @db.Decimal(15, 2)
-  totalNeto      Decimal  @db.Decimal(15, 2)
-  detalles       String?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-  empleado       Employee @relation(fields: [empleadoId], references: [id])
-  nomina         Payroll  @relation(fields: [nominaId], references: [id])
+  id               String   @id @default(cuid())
+  nominaId         String
+  empleadoId       String
+  salarioBase      Decimal  @db.Decimal(15, 2)
+  bonificaciones   Decimal  @default(0) @db.Decimal(15, 2)
+  deducciones      Decimal  @default(0) @db.Decimal(15, 2)
+  totalNeto        Decimal  @db.Decimal(15, 2)
+  detalles         String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  inatec           Decimal  @default(0) @db.Decimal(15, 2)
+  inssLaboral      Decimal  @default(0) @db.Decimal(15, 2)
+  inssPatronal     Decimal  @default(0) @db.Decimal(15, 2)
+  ir               Decimal  @default(0) @db.Decimal(15, 2)
+  otrasDeducciones Decimal  @default(0) @db.Decimal(15, 2)
+  empleado         Employee @relation(fields: [empleadoId], references: [id])
+  nomina           Payroll  @relation(fields: [nominaId], references: [id])
 
   @@index([nominaId])
   @@index([empleadoId])
@@ -505,22 +505,18 @@ model PettyCashMovement {
   createdAt         DateTime              @default(now())
   updatedAt         DateTime              @updatedAt
   evidenciaUrls     String[]              @default([])
-  
-  // Workflow Approvals
   approvedById      String?
   authorizedById    String?
-  paidById          String?
   liquidatedById    String?
+  paidById          String?
   rejectionReason   String?
-
   accountingEntry   AccountingEntry?      @relation(fields: [accountingEntryId], references: [id])
-  pettyCash         PettyCash             @relation(fields: [pettyCashId], references: [id])
-  usuario           User                  @relation("PettyCashMovementCreator", fields: [usuarioId], references: [id])
-  
   approvedBy        User?                 @relation("MovementApprover", fields: [approvedById], references: [id])
   authorizedBy      User?                 @relation("MovementAuthorizer", fields: [authorizedById], references: [id])
-  paidBy            User?                 @relation("MovementPayer", fields: [paidById], references: [id])
   liquidatedBy      User?                 @relation("MovementLiquidator", fields: [liquidatedById], references: [id])
+  paidBy            User?                 @relation("MovementPayer", fields: [paidById], references: [id])
+  pettyCash         PettyCash             @relation(fields: [pettyCashId], references: [id])
+  usuario           User                  @relation("PettyCashMovementCreator", fields: [usuarioId], references: [id])
 
   @@index([pettyCashId])
   @@index([usuarioId])
@@ -530,18 +526,19 @@ model PettyCashMovement {
 }
 
 model Entity {
-  id        String     @id @default(cuid())
-  nombre    String
-  ruc       String?    @unique
-  email     String?
-  telefono  String?
-  direccion String?
-  contacto  String?
-  tipo      EntityType @default(PROVEEDOR)
-  activo    Boolean    @default(true)
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
-  checks    Check[]
+  id             String          @id @default(cuid())
+  nombre         String
+  ruc            String?         @unique
+  email          String?
+  telefono       String?
+  direccion      String?
+  contacto       String?
+  tipo           EntityType      @default(PROVEEDOR)
+  activo         Boolean         @default(true)
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  checks         Check[]
+  purchaseOrders PurchaseOrder[]
 
   @@map("entities")
 }
@@ -570,61 +567,57 @@ model CashMovement {
 }
 
 model Check {
-  id                String           @id @default(cuid())
-  numero            String           @unique
-  tipo              CheckType
-  banco             String
-  cuentaBancaria    String
-  beneficiario      String?
-  monto             Decimal          @db.Decimal(15, 2)
-  fecha             DateTime
-  referencia        String?
-  estado            CheckStatus      @default(PENDIENTE_VALIDACION)
-  usuarioId         String
-  accountingEntryId String?          @unique
-  budgetItemId      String?
-  createdAt         DateTime         @default(now())
-  updatedAt         DateTime         @updatedAt
-  conciliado        Boolean          @default(false)
-  fechaConciliacion DateTime?
-  entityId          String?
-  
-  // Accountant Checklist
-  hasCartaSolicitud    Boolean @default(false)
-  hasDocumentosCompletos Boolean @default(false)
-  hasFirmaSolicitante  Boolean @default(false)
-
-  // Institutional Workflow Audit Fields
-  budgetApprovedById    String?
-  budgetApprovedAt      DateTime?
-  budgetRejectedById    String?
-  budgetRejectedAt      DateTime?
-  preCheckApprovedById  String?
-  preCheckApprovedAt    DateTime?
-  preCheckRejectedById  String?
-  preCheckRejectedAt    DateTime?
-  paidById              String?
-  paidAt                DateTime?
-  accountedById         String?
-  accountedAt           DateTime?
-  issuedById            String?
-  issuedAt              DateTime?
-  
-  renglonGasto          String?
-  evidenceUrls          String[]         @default([])
-
-  accountingEntry   AccountingEntry? @relation(fields: [accountingEntryId], references: [id])
-  budgetItem        BudgetItem?      @relation(fields: [budgetItemId], references: [id])
-  entity            Entity?          @relation(fields: [entityId], references: [id])
-  usuario           User             @relation(fields: [usuarioId], references: [id])
-  
-  budgetApprovedBy    User? @relation("BudgetApprovedChecks", fields: [budgetApprovedById], references: [id])
-  budgetRejectedBy    User? @relation("BudgetRejectedChecks", fields: [budgetRejectedById], references: [id])
-  preCheckApprovedBy  User? @relation("PreCheckApprovedChecks", fields: [preCheckApprovedById], references: [id])
-  preCheckRejectedBy  User? @relation("PreCheckRejectedChecks", fields: [preCheckRejectedById], references: [id])
-  paidBy              User? @relation("CheckPaidBy", fields: [paidById], references: [id])
-  accountedBy         User? @relation("CheckAccountedBy", fields: [accountedById], references: [id])
-  issuedBy            User? @relation("CheckIssuedBy", fields: [issuedById], references: [id])
+  id                     String           @id @default(cuid())
+  numero                 String           @unique
+  tipo                   CheckType
+  banco                  String
+  cuentaBancaria         String
+  beneficiario           String?
+  monto                  Decimal          @db.Decimal(15, 2)
+  fecha                  DateTime
+  referencia             String?
+  estado                 CheckStatus      @default(PENDIENTE_VALIDACION)
+  usuarioId              String
+  accountingEntryId      String?          @unique
+  createdAt              DateTime         @default(now())
+  updatedAt              DateTime         @updatedAt
+  conciliado             Boolean          @default(false)
+  fechaConciliacion      DateTime?
+  entityId               String?
+  accountedAt            DateTime?
+  accountedById          String?
+  budgetApprovedAt       DateTime?
+  budgetApprovedById     String?
+  budgetItemId           String?
+  budgetRejectedAt       DateTime?
+  budgetRejectedById     String?
+  evidenceUrls           String[]         @default([])
+  hasCartaSolicitud      Boolean          @default(false)
+  hasDocumentosCompletos Boolean          @default(false)
+  hasFirmaSolicitante    Boolean          @default(false)
+  issuedAt               DateTime?
+  issuedById             String?
+  paidAt                 DateTime?
+  paidById               String?
+  preCheckApprovedAt     DateTime?
+  preCheckApprovedById   String?
+  preCheckRejectedAt     DateTime?
+  preCheckRejectedById   String?
+  renglonGasto           String?
+  chequeEntregado        Boolean          @default(false)
+  purchaseOrderId        String?
+  accountedBy            User?            @relation("CheckAccountedBy", fields: [accountedById], references: [id])
+  accountingEntry        AccountingEntry? @relation(fields: [accountingEntryId], references: [id])
+  budgetApprovedBy       User?            @relation("BudgetApprovedChecks", fields: [budgetApprovedById], references: [id])
+  budgetItem             BudgetItem?      @relation(fields: [budgetItemId], references: [id])
+  budgetRejectedBy       User?            @relation("BudgetRejectedChecks", fields: [budgetRejectedById], references: [id])
+  entity                 Entity?          @relation(fields: [entityId], references: [id])
+  issuedBy               User?            @relation("CheckIssuedBy", fields: [issuedById], references: [id])
+  paidBy                 User?            @relation("CheckPaidBy", fields: [paidById], references: [id])
+  preCheckApprovedBy     User?            @relation("PreCheckApprovedChecks", fields: [preCheckApprovedById], references: [id])
+  preCheckRejectedBy     User?            @relation("PreCheckRejectedChecks", fields: [preCheckRejectedById], references: [id])
+  purchaseOrder          PurchaseOrder?   @relation(fields: [purchaseOrderId], references: [id])
+  usuario                User             @relation(fields: [usuarioId], references: [id])
 
   @@index([usuarioId])
   @@index([entityId])
@@ -659,14 +652,14 @@ model CashClosure {
 }
 
 model AccountingClosure {
-  id          String   @id @default(cuid())
+  id          String        @id @default(cuid())
   mes         Int
   anio        Int
-  fechaCierre DateTime @default(now())
+  fechaCierre DateTime      @default(now())
   usuarioId   String
-  usuario     User     @relation(fields: [usuarioId], references: [id])
   notas       String?
   estado      ClosureStatus @default(CERRADO)
+  usuario     User          @relation(fields: [usuarioId], references: [id])
 
   @@unique([mes, anio])
   @@index([mes, anio])
@@ -705,24 +698,24 @@ model SystemSetting {
 }
 
 model BankAccount {
-  id             String            @id @default(uuid())
-  bankName       String
-  accountNumber  String            @unique
-  accountName    String?
-  accountType    String
-  currency       String
-  openingBalance Decimal           @db.Decimal(15, 2)
-  region         String?
-  costCenter     String?
-  status         String            @default("PENDING_VALIDATION")
-  isActive       Boolean           @default(false)
-  minBalance     Decimal           @default(0) @db.Decimal(15, 2)
-  currentBalance Decimal           @default(0) @db.Decimal(15, 2)
-  evidenceUrls   String[]          @default([])
-  createdAt      DateTime          @default(now())
-  updatedAt      DateTime          @updatedAt
-  transactions        BankTransaction[]
-  reconciliations     BankReconciliation[]
+  id              String               @id @default(uuid())
+  bankName        String
+  accountNumber   String               @unique
+  accountName     String?
+  accountType     String
+  currency        String
+  openingBalance  Decimal              @db.Decimal(15, 2)
+  region          String?
+  costCenter      String?
+  status          String               @default("PENDING_VALIDATION")
+  isActive        Boolean              @default(false)
+  minBalance      Decimal              @default(0) @db.Decimal(15, 2)
+  currentBalance  Decimal              @default(0) @db.Decimal(15, 2)
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+  evidenceUrls    String[]             @default([])
+  reconciliations BankReconciliation[]
+  transactions    BankTransaction[]
 
   @@map("bank_accounts")
 }
@@ -730,19 +723,19 @@ model BankAccount {
 model BankReconciliation {
   id              String      @id @default(cuid())
   bankAccountId   String
-  bankAccount     BankAccount @relation(fields: [bankAccountId], references: [id])
   userId          String
-  user            User        @relation(fields: [userId], references: [id])
   date            DateTime    @default(now())
   balanceLibros   Decimal     @db.Decimal(15, 2)
   balanceExtracto Decimal     @db.Decimal(15, 2)
   diferencia      Decimal     @db.Decimal(15, 2)
   totalMatching   Int
   periodoMes      Int
-  periodoAnio      Int
+  periodoAnio     Int
   observaciones   String?
-  detalles        Json?       // To store matched/unmatched summary if needed
+  detalles        Json?
   createdAt       DateTime    @default(now())
+  bankAccount     BankAccount @relation(fields: [bankAccountId], references: [id])
+  user            User        @relation(fields: [userId], references: [id])
 
   @@index([bankAccountId])
   @@index([userId])
@@ -799,6 +792,114 @@ model PasswordResetToken {
   @@map("password_reset_tokens")
 }
 
+model LeaveRequest {
+  id              String      @id @default(cuid())
+  empleadoId      String
+  tipo            LeaveType
+  fechaInicio     DateTime
+  fechaFin        DateTime
+  dias            Int         @default(1)
+  motivo          String?
+  estado          LeaveStatus @default(PENDIENTE)
+  conGoceSueldo   Boolean     @default(true)
+  aprobadoPorId   String?
+  fechaAprobacion DateTime?
+  archivoUrl      String?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  aprobadoPor     User?       @relation("LeaveApprover", fields: [aprobadoPorId], references: [id])
+  empleado        Employee    @relation(fields: [empleadoId], references: [id])
+
+  @@index([empleadoId])
+  @@index([estado])
+  @@map("leave_requests")
+}
+
+model PurchaseRequest {
+  id             String                  @id @default(cuid())
+  numero         String                  @unique
+  solicitanteId  String
+  departamento   String?
+  fechaSolicitud DateTime                @default(now())
+  estado         PurchaseRequestStatus   @default(BORRADOR)
+  prioridad      PurchaseRequestPriority @default(NORMAL)
+  justificacion  String
+  createdAt      DateTime                @default(now())
+  updatedAt      DateTime                @updatedAt
+  items          PurchaseRequestItem[]
+  solicitante    User                    @relation("RequestSolicitor", fields: [solicitanteId], references: [id])
+
+  @@index([solicitanteId])
+  @@index([estado])
+  @@map("purchase_requests")
+}
+
+model PurchaseRequestItem {
+  id               String          @id @default(cuid())
+  requestId        String
+  descripcion      String
+  cantidad         Decimal         @db.Decimal(10, 2)
+  unidadMedida     String          @default("UNIDAD")
+  estimadoUnitario Decimal?        @db.Decimal(15, 2)
+  request          PurchaseRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+
+  @@index([requestId])
+  @@map("purchase_request_items")
+}
+
+model PurchaseOrder {
+  id                String              @id @default(cuid())
+  numero            String              @unique
+  proveedorId       String
+  fechaEmision      DateTime            @default(now())
+  fechaEntrega      DateTime?
+  estado            PurchaseOrderStatus @default(BORRADOR)
+  moneda            String              @default("NIO")
+  tasaCambio        Decimal             @default(1) @db.Decimal(10, 4)
+  subtotal          Decimal             @default(0) @db.Decimal(15, 2)
+  impuestos         Decimal             @default(0) @db.Decimal(15, 2)
+  total             Decimal             @default(0) @db.Decimal(15, 2)
+  retencion         Decimal             @default(0) @db.Decimal(15, 2)
+  condicionesPago   String?
+  lugarEntrega      String?
+  observaciones     String?
+  budgetItemId      String?
+  elaboradoPorId    String
+  autorizadoPorId   String?
+  fechaAutorizacion DateTime?
+  checks            Check[]
+  items             PurchaseOrderItem[]
+  autorizadoPor     User?               @relation("OrderApprover", fields: [autorizadoPorId], references: [id])
+  budgetItem        BudgetItem?         @relation(fields: [budgetItemId], references: [id])
+  elaboradoPor      User                @relation("OrderCreator", fields: [elaboradoPorId], references: [id])
+  proveedor         Entity              @relation(fields: [proveedorId], references: [id])
+
+  @@index([proveedorId])
+  @@index([estado])
+  @@index([elaboradoPorId])
+  @@map("purchase_orders")
+}
+
+model PurchaseOrderItem {
+  id             String         @id @default(cuid())
+  orderId        String
+  inventarioId   String?
+  descripcion    String
+  cantidad       Decimal        @db.Decimal(10, 2)
+  unidadMedida   String
+  precioUnitario Decimal        @db.Decimal(15, 2)
+  descuento      Decimal        @default(0) @db.Decimal(15, 2)
+  impuesto       Decimal        @default(0) @db.Decimal(15, 2)
+  total          Decimal        @db.Decimal(15, 2)
+  recibido       Decimal        @default(0) @db.Decimal(10, 2)
+  producto       InventoryItem? @relation(fields: [inventarioId], references: [id])
+  order          PurchaseOrder  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+  @@index([inventarioId])
+  @@map("purchase_order_items")
+}
+
 enum Role {
   Admin
   ContadorGeneral
@@ -845,8 +946,6 @@ enum PettyCashMovementType {
   AJUSTE
 }
 
-
-
 enum EntityType {
   PROVEEDOR
   CLIENTE
@@ -864,14 +963,12 @@ enum CheckType {
 }
 
 enum CheckStatus {
-  PENDIENTE_VALIDACION // Legacy
-  APROBADO_PRESUPUESTO // Legacy
-  EMITIDO              // Legacy
-  CONTABILIZADO        // Legacy
-  PAGADO               // Legacy
+  PENDIENTE_VALIDACION
+  APROBADO_PRESUPUESTO
+  EMITIDO
+  CONTABILIZADO
+  PAGADO
   ANULADO
-  
-  // Real institutional statuses
   CHEQUE_REQUESTED
   BUDGET_APPROVED
   BUDGET_REJECTED
@@ -973,41 +1070,13 @@ enum NotificationType {
 enum MovementStatus {
   PENDIENTE_VALIDACION
   VALIDADO
+  RECHAZADO
+  ANULADO
   SOLICITADO
   APROBADO_JEFE
   AUTORIZADO
   ENTREGADO
   LIQUIDADO
-  RECHAZADO
-  ANULADO
-}
-
-model LeaveRequest {
-  id          String      @id @default(cuid())
-  empleadoId  String
-  tipo        LeaveType
-  fechaInicio DateTime
-  fechaFin    DateTime
-  dias        Int         @default(1)
-  motivo      String?
-  estado      LeaveStatus @default(PENDIENTE)
-  conGoceSueldo Boolean   @default(true) 
-  
-  // Auditoria
-  aprobadoPorId String?
-  fechaAprobacion DateTime?
-  
-  archivoUrl  String? // Justificante médico o carta
-
-  empleado    Employee    @relation(fields: [empleadoId], references: [id])
-  aprobadoPor User?       @relation("LeaveApprover", fields: [aprobadoPorId], references: [id])
-
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  @@index([empleadoId])
-  @@index([estado])
-  @@map("leave_requests")
 }
 
 enum LeaveType {
@@ -1023,4 +1092,30 @@ enum LeaveStatus {
   APROBADO
   RECHAZADO
   CANCELADO
+}
+
+enum PurchaseRequestStatus {
+  BORRADOR
+  PENDIENTE_APROBACION
+  APROBADO
+  RECHAZADO
+  PROCESADA
+  ANULADA
+}
+
+enum PurchaseRequestPriority {
+  BAJA
+  NORMAL
+  ALTA
+  URGENTE
+}
+
+enum PurchaseOrderStatus {
+  BORRADOR
+  PENDIENTE_AUTORIZACION
+  AUTORIZADO
+  ENVIADO_PROVEEDOR
+  PARCIALMENTE_RECIBIDO
+  COMPLETADO
+  ANULADO
 }
