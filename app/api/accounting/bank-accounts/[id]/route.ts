@@ -40,7 +40,7 @@ export async function PATCH(
             return NextResponse.json({ error: "No autorizado" }, { status: 401 })
         }
 
-        const currentRole = session.user.role as Role
+        const currentRole = session?.user?.role as Role
         console.log(`[PATCH BankAccount] User: ${session.user.email}, Role: ${currentRole}`)
 
         const allowedRoles: Role[] = [Role.Admin, Role.ResponsableContabilidad, Role.DirectoraDAF, Role.ContadorGeneral]

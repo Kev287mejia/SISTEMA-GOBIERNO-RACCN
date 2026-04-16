@@ -1,3 +1,4 @@
+export const dynamic = "force-dynamic";
 import { notFound } from "next/navigation"
 import { prisma } from "@/lib/prisma"
 import { PettyCashPrintView } from "@/components/caja-chica/petty-cash-print-view"

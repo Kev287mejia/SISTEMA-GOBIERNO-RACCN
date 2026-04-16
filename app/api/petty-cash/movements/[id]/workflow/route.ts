@@ -17,7 +17,7 @@ export async function POST(
 
         const { action, targetStatus, reason } = await req.json()
         const movementId = params.id
-        const userRole = session.user.role as Role
+        const userRole = session?.user?.role as Role
         const userId = session.user.id
 
         // Validar Movimiento

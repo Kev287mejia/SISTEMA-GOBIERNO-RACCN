@@ -14,7 +14,7 @@ export async function POST(req: Request) {
 
         // Solo Admin, ContadorGeneral y ResponsableContabilidad pueden desactivar usuarios
         const allowedRoles = ["Admin", "ContadorGeneral", "ResponsableContabilidad"]
-        if (!allowedRoles.includes(session.user.role)) {
+        if (!allowedRoles.includes(session?.user?.role)) {
             return NextResponse.json({ error: "Sin permisos" }, { status: 403 })
         }
 

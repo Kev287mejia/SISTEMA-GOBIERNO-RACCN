@@ -19,7 +19,7 @@ export async function PATCH(
             Role.ResponsableContabilidad
         ]
 
-        if (!allowedRoles.includes(session.user.role as Role)) {
+        if (!allowedRoles.includes(session?.user?.role as Role)) {
             return NextResponse.json({ error: "Prohibido" }, { status: 403 })
         }
 

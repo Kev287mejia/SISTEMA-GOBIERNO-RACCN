@@ -9,7 +9,7 @@ export async function GET(req: Request) {
         const session = await getServerSession(authOptions)
 
         // Only Admin and Auditor can view logs
-        if (!session || (session.user.role !== Role.Admin && session.user.role !== Role.Auditor)) {
+        if (!session || (session?.user?.role !== Role.Admin && session?.user?.role !== Role.Auditor)) {
             return new NextResponse("Unauthorized", { status: 401 })
         }
 

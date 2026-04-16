@@ -16,7 +16,8 @@ export async function middleware(req: NextRequest) {
     return NextResponse.next()
   }
 
-  // 2. Verificar Sesión
+  // 2. Verificar Sesión (DESACTIVADO PARA MODO DEMO)
+  /*
   const token = await getToken({ req })
 
   // Si no hay token, redirigir a login
@@ -31,12 +32,13 @@ export async function middleware(req: NextRequest) {
     url.searchParams.set("callbackUrl", encodeURI(req.url))
     return NextResponse.redirect(url)
   }
+  */
 
-  // 3. Pasar la solicitud si está autenticado
+  // 3. Pasar la solicitud
   const response = NextResponse.next()
 
   // Añadir cabeceras de seguridad o info de usuario si es necesario
-  response.headers.set("x-user-role", token.role as string)
+  // response.headers.set("x-user-role", token.role as string)
 
   return response
 }

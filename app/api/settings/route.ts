@@ -16,7 +16,7 @@ export async function GET() {
         })
 
         // Initial seed if empty
-        if (settings.length === 0 && session.user.role === Role.Admin) {
+        if (settings.length === 0 && session?.user?.role === Role.Admin) {
             const initialSettings = [
                 // INSTITUCION
                 { key: 'inst_name', value: 'Gobierno Regional Autónomo de la Costa Caribe Norte (GRACCNN)', label: 'Nombre Institucional', group: 'Institucion', type: 'string' },
@@ -80,12 +80,12 @@ export async function POST(req: Request) {
             'CoordinadorGobierno'
         ]
 
-        console.log('[SETTINGS_POST] User role:', session.user.role)
-        console.log('[SETTINGS_POST] User role type:', typeof session.user.role)
+        console.log('[SETTINGS_POST] User role:', session?.user?.role)
+        console.log('[SETTINGS_POST] User role type:', typeof session?.user?.role)
         console.log('[SETTINGS_POST] Allowed roles:', allowedRoles)
-        console.log('[SETTINGS_POST] Is allowed?:', allowedRoles.includes(session.user.role as string))
+        console.log('[SETTINGS_POST] Is allowed?:', allowedRoles.includes(session?.user?.role as string))
 
-        if (!allowedRoles.includes(session.user.role as string)) {
+        if (!allowedRoles.includes(session?.user?.role as string)) {
             console.log('[SETTINGS_POST] FORBIDDEN - Role not allowed')
             return new NextResponse("Forbidden", { status: 403 })
         }

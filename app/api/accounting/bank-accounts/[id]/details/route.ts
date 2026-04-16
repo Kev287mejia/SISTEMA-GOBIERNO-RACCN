@@ -24,7 +24,7 @@ export async function GET(
             Role.ResponsableCaja
         ]
 
-        if (!allowedRoles.includes(session.user.role as Role)) {
+        if (!allowedRoles.includes(session?.user?.role as Role)) {
             return NextResponse.json({ error: "Prohibido" }, { status: 403 })
         }
 

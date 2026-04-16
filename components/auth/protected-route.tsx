@@ -28,7 +28,7 @@ export function ProtectedRoute({
       return
     }
 
-    const userRole = session.user.role
+    const userRole = session?.user?.role
 
     if (requiredRole && userRole !== requiredRole) {
       router.push("/dashboard")
@@ -56,13 +56,13 @@ export function ProtectedRoute({
     return null
   }
 
-  const userRole = session.user.role
+  const userRole = session?.user?.role
 
   if (requiredRole && userRole !== requiredRole) {
     return null
   }
 
-  if (allowedRoles && !allowedRoles.includes(userRole)) {
+  if (allowedRoles && !allowedRoles.includes(userRole as Role)) {
     return null
   }
 

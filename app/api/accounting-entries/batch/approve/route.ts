@@ -17,7 +17,7 @@ export async function POST(req: Request) {
         // Only Coordinators, DAF, or specific roles should approve
         // Assuming strict rule: Only CoordinadorGobierno or DirectoraDAF or ResponsableContabilidad (maybe) can approve
         const allowedRoles: Role[] = [Role.CoordinadorGobierno, Role.DirectoraDAF, Role.ResponsableContabilidad, Role.Admin]
-        if (!allowedRoles.includes(session.user.role as Role)) {
+        if (!allowedRoles.includes(session?.user?.role as Role)) {
             return new NextResponse("Forbidden: Insufficient privileges", { status: 403 })
         }
 

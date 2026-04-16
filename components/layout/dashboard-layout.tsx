@@ -19,6 +19,14 @@ export function DashboardLayout({
   const { data: session } = useSession()
   const [instName, setInstName] = useState("Sistema de Gobierno")
 
+  const mockUser = {
+    name: "Lic. Julio Lopez Escobar",
+    role: "ContadorGeneral" as any,
+    id: "mock-julio-id"
+  }
+
+  const currentUser = session?.user || mockUser
+
   useEffect(() => {
     const fetchSettings = async () => {
       try {
@@ -60,13 +68,13 @@ export function DashboardLayout({
               </kbd>
             </Button>
           </div>
-          {session?.user && (
+          {currentUser && (
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <User className="h-4 w-4" />
-                <span className="font-medium text-foreground">{session.user.name}</span>
+                <span className="font-medium text-foreground">{currentUser.name}</span>
                 <span className="text-muted-foreground">
-                  ({getRoleDisplayName(session.user.role)})
+                  ({getRoleDisplayName(currentUser.role)})
                 </span>
               </div>
               <NotificationCenter />

@@ -34,7 +34,7 @@ export async function PATCH(
 
         if (!check) return new NextResponse("Check not found", { status: 404 })
 
-        const userRole = session.user.role as Role
+        const userRole = session?.user?.role as Role
         const userId = session.user.id
         const now = new Date()
         let updateData: any = { estado }

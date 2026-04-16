@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
         }
 
         const allowedRoles = ["Admin", "ContadorGeneral", "AuxiliarContable", "ResponsablePresupuesto", "ResponsableContabilidad"]
-        if (!allowedRoles.includes(session.user.role as any)) {
+        if (!allowedRoles.includes(session?.user?.role as any)) {
             return NextResponse.json({ error: "No tiene permisos para registrar ejecución presupuestaria" }, { status: 403 })
         }
 

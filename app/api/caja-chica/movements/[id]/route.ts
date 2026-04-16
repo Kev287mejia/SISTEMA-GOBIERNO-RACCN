@@ -15,7 +15,7 @@ export async function PATCH(
             return NextResponse.json({ error: "No autorizado" }, { status: 401 })
         }
 
-        if ((session.user.role as any) !== "Admin" && (session.user.role as any) !== "ResponsableCredito") {
+        if ((session?.user?.role as any) !== "Admin" && (session?.user?.role as any) !== "ResponsableCredito") {
             return NextResponse.json({ error: "No tiene permisos para realizar esta acción" }, { status: 403 })
         }
 

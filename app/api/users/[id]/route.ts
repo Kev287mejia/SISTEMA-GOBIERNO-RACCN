@@ -12,7 +12,7 @@ export async function DELETE(request: Request, { params }: { params: { id: strin
         const allowedRoles = [Role.Admin, Role.RRHH, Role.DirectoraRRHH, Role.ResponsableContabilidad] as string[]
 
         // Fix: Convert role to string for comparison or cast properly
-        if (!session?.user || !allowedRoles.includes(session.user.role)) {
+        if (!session?.user || !allowedRoles.includes(session?.user?.role)) {
             console.log(`[DELETE USER] Acceso denegado. User Role: ${session?.user?.role}`)
             return NextResponse.json({ error: "No autorizado" }, { status: 401 })
         }

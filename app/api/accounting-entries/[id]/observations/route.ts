@@ -41,7 +41,7 @@ export async function POST(
     try {
         const session = await getServerSession(authOptions)
         const allowedRoles = ["CoordinadorGobierno", "DirectoraDAF"]
-        if (!session?.user || !allowedRoles.includes(session.user.role)) {
+        if (!session?.user || !allowedRoles.includes(session?.user?.role)) {
             return NextResponse.json({ error: "No tiene permisos para agregar observaciones" }, { status: 403 })
         }
 
@@ -68,7 +68,7 @@ export async function POST(
                 accion: (AuditAction as any).CREATE,
                 entidad: "AccountingObservation",
                 entidadId: observation.id,
-                descripcion: `${getRoleDisplayName(session.user.role)} agregó observación al asiento ${id}: ${observacion.substring(0, 50)}...`,
+                descripcion: `${getRoleDisplayName(session?.user?.role)} agregó observación al asiento ${id}: ${observacion.substring(0, 50)}...`,
                 datosNuevos: observation,
             })
 

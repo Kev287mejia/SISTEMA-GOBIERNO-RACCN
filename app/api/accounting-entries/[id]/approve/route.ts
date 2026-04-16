@@ -32,7 +32,7 @@ export async function POST(
       Role.CoordinadorGobierno,
     ]
 
-    if (!allowedRoles.includes(session.user.role as Role)) {
+    if (!allowedRoles.includes(session?.user?.role as Role)) {
       return NextResponse.json(
         { error: "No tiene permisos para aprobar asientos contables" },
         { status: 403 }
@@ -173,7 +173,7 @@ export async function DELETE(
       Role.CoordinadorGobierno,
     ]
 
-    if (!allowedRoles.includes(session.user.role as Role)) {
+    if (!allowedRoles.includes(session?.user?.role as Role)) {
       return NextResponse.json(
         { error: "No tiene permisos para rechazar asientos contables" },
         { status: 403 }

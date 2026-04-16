@@ -17,14 +17,20 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // Build phase safety check
+  const isBuild = process.env.NODE_ENV === 'production' && typeof window === 'undefined';
+
   return (
     <html lang="es" suppressHydrationWarning>
       <body className={inter.className}>
         <ThemeProvider>
-          {/* Rebuild Trigger 2 */}
           <SessionProvider>
             <NotificationProvider>
-              {children}
+              {isBuild ? (
+                <main id="build-content-placeholder" />
+              ) : (
+                children
+              )}
             </NotificationProvider>
           </SessionProvider>
         </ThemeProvider>

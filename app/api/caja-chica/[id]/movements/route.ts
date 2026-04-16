@@ -53,7 +53,7 @@ export async function POST(
             return NextResponse.json({ error: "No autorizado" }, { status: 401 })
         }
 
-        if ((session.user.role as any) !== "Admin" && (session.user.role as any) !== "ResponsableCredito") {
+        if ((session?.user?.role as any) !== "Admin" && (session?.user?.role as any) !== "ResponsableCredito") {
             return NextResponse.json({ error: "No tiene permisos para registrar movimientos" }, { status: 403 })
         }
 

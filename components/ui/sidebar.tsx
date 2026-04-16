@@ -55,9 +55,10 @@ export function Sidebar() {
 
   // Filter navigation based on user role
   const filteredNavigation = navigation.filter((item) => {
-    if (!session?.user?.role) return false
-    const deniedModules = (session.user as any).deniedModules || []
-    return hasPermission(session.user.role as Role, item.href, deniedModules)
+    const role = session?.user?.role
+    if (!role) return false
+    const deniedModules = (session?.user as any)?.deniedModules || []
+    return hasPermission(role as Role, item.href, deniedModules)
   })
 
   return (

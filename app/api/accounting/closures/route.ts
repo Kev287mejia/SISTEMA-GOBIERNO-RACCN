@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
 
         // Only Admin, Auditor or ContadorGeneral can close periods
         const authorizedRoles = ["Admin", "Auditor", "ContadorGeneral", "ResponsableContabilidad"]
-        if (!session?.user || !authorizedRoles.includes(session.user.role)) {
+        if (!session?.user || !authorizedRoles.includes(session?.user?.role)) {
             return NextResponse.json({ error: "No tiene permisos para cerrar periodos" }, { status: 403 })
         }
 

@@ -1,5 +1,6 @@
 "use client"
 
+export const dynamic = "force-dynamic";
 import { useState, useEffect } from "react"
 import { DashboardLayout } from "@/components/layout/dashboard-layout"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -189,7 +190,7 @@ export default function AuditoriaPage() {
                 date.toLocaleDateString('es-NI'),
                 date.toLocaleTimeString('es-NI'),
                 `${log.usuario.nombre} ${log.usuario.apellido}`,
-                log.usuario.role,
+                log.usuario?.role,
                 accionEs,
                 ENTITY_MAP[log.entidad] || log.entidad,
                 log.detalles || '',
@@ -328,7 +329,7 @@ export default function AuditoriaPage() {
                                                                         {log.usuario.nombre} {log.usuario.apellido}
                                                                     </p>
                                                                     <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                                                                        {log.usuario.role}
+                                                                        {log.usuario?.role}
                                                                     </p>
                                                                 </div>
                                                             </div>

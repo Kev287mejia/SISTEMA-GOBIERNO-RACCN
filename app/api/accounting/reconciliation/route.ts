@@ -11,7 +11,7 @@ import { Role } from "@prisma/client"
 export async function POST(req: NextRequest) {
     try {
         const session = await getServerSession(authOptions)
-        if (!session || (session.user.role !== Role.Admin && session.user.role !== Role.ResponsableContabilidad && session.user.role !== Role.ContadorGeneral)) {
+        if (!session || (session?.user?.role !== Role.Admin && session?.user?.role !== Role.ResponsableContabilidad && session?.user?.role !== Role.ContadorGeneral)) {
             return new NextResponse("Unauthorized", { status: 401 })
         }
 
@@ -100,7 +100,7 @@ export async function PUT(req: NextRequest) {
         }
 
         // Consistent role check as in POST
-        if (session.user.role !== Role.Admin && session.user.role !== Role.ResponsableContabilidad && session.user.role !== Role.ContadorGeneral) {
+        if (session?.user?.role !== Role.Admin && session?.user?.role !== Role.ResponsableContabilidad && session?.user?.role !== Role.ContadorGeneral) {
             return new NextResponse("Unauthorized", { status: 403 })
         }
 

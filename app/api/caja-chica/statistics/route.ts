@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
         }
 
         const allowedRoles = ["Admin", "ResponsableCredito", "ContadorGeneral", "Auditor", "ResponsableContabilidad"]
-        if (!allowedRoles.includes(session.user.role as any)) {
+        if (!allowedRoles.includes(session?.user?.role as any)) {
             return NextResponse.json({ error: "No tiene permisos para ver estas estadísticas" }, { status: 403 })
         }
 

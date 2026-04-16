@@ -1,5 +1,6 @@
 "use client"
 
+export const dynamic = "force-dynamic";
 import { useState } from "react"
 import { signIn } from "next-auth/react"
 import { useRouter } from "next/navigation"
@@ -154,6 +155,15 @@ export default function LoginPage() {
                     Ingresar al Portal <ArrowRight className="h-4 w-4" />
                   </span>
                 )}
+              </Button>
+
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full h-12 border-amber-500/50 text-amber-400 hover:bg-amber-500/10 font-bold rounded-xl transition-all"
+                onClick={() => router.push("/contabilidad")}
+              >
+                Acceso Demo (Sin Contraseña)
               </Button>
             </form>
 

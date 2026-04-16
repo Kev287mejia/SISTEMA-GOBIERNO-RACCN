@@ -85,22 +85,24 @@ export function useSocket(options: UseSocketOptions = {}) {
       setIsConnected(true)
 
       // Join room based on user role
-      const role = session.user.role.toLowerCase().replace(/\s+/g, "-")
-      socket.emit("join-room", role)
+      const role = session?.user?.role?.toLowerCase()?.replace(/\s+/g, "-")
+      if (role) {
+        socket.emit("join-room", role)
 
-      // Also join general rooms
-      if (role === "contadorgeneral" || role === "admin" || role === "auditor" || role === "coordinadorgobierno" || role === "directoradaf") {
-        socket.emit("join-room", "contador-general")
-      }
-      if (role === "rrhh" || role === "directorarrhh" || role === "admin") {
-        socket.emit("join-room", "rrhh")
-      }
-      if (role === "admin") {
-        socket.emit("join-room", "admin")
+        // Also join general rooms
+        if (role === "contadorgeneral" || role === "admin" || role === "auditor" || role === "coordinadorgobierno" || role === "directoradaf") {
+          socket.emit("join-room", "contador-general")
+        }
+        if (role === "rrhh" || role === "directorarrhh" || role === "admin") {
+          socket.emit("join-room", "rrhh")
+        }
+        if (role === "admin") {
+          socket.emit("join-room", "admin")
+        }
       }
 
       // Join private user room for targeted notifications
-      if (session.user.id) {
+      if (session?.user?.id) {
         socket.emit("join-room", session.user.id)
       }
     })

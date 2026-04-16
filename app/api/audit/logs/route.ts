@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
             "Admin", "Auditor", "ContadorGeneral",
             "CoordinadorGobierno", "ResponsableContabilidad"
         ]
-        if (!allowedRoles.includes(session.user.role as any)) {
+        if (!allowedRoles.includes(session?.user?.role as any)) {
             return NextResponse.json({ error: "No tiene permisos para ver logs de auditoría" }, { status: 403 })
         }
 

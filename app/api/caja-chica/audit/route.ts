@@ -12,7 +12,7 @@ export async function POST(request: Request) {
         }
 
         const allowedRoles = ["Admin", "ContadorGeneral", "Auditor", "ResponsableContabilidad"]
-        if (!allowedRoles.includes(session.user.role)) {
+        if (!allowedRoles.includes(session?.user?.role)) {
             return NextResponse.json({ error: "Permisos insuficientes para realizar arqueos" }, { status: 403 })
         }
 

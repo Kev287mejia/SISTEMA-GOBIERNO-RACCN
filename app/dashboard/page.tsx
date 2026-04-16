@@ -1,5 +1,6 @@
 "use client"
 
+export const dynamic = "force-dynamic";
 import { useEffect, useState } from "react"
 import { DashboardLayout } from "@/components/layout/dashboard-layout"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -128,7 +129,7 @@ export default function DashboardPage() {
               Bienvenido, <span className="text-blue-400">{session.user.name?.split(' ')[0]}</span>
             </h1>
             <p className="text-blue-100/60 font-medium text-lg">
-              Sistema de Gestión Gubernamental GRACCNN • {session.user.role}
+              Sistema de Gestión Gubernamental GRACCNN • {session?.user?.role}
             </p>
           </div>
         </div>

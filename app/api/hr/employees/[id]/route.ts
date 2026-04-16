@@ -11,7 +11,7 @@ export async function GET(
     try {
         const session = await getServerSession(authOptions)
 
-        if (!session || (session.user.role !== Role.Admin && session.user.role !== Role.RRHH)) {
+        if (!session || (session?.user?.role !== Role.Admin && session?.user?.role !== Role.RRHH)) {
             return new NextResponse("Unauthorized", { status: 401 })
         }
 
@@ -46,7 +46,7 @@ export async function PUT(
     try {
         const session = await getServerSession(authOptions)
 
-        if (!session || (session.user.role !== Role.Admin && session.user.role !== Role.RRHH)) {
+        if (!session || (session?.user?.role !== Role.Admin && session?.user?.role !== Role.RRHH)) {
             return new NextResponse("Unauthorized", { status: 401 })
         }
 

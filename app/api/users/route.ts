@@ -13,7 +13,7 @@ export async function GET() {
 
         // Solo Admin, ContadorGeneral y RRHH pueden ver usuarios
         const allowedRoles = ["Admin", "ContadorGeneral", "RRHH", "DirectoraRRHH", "ResponsableContabilidad"]
-        if (!allowedRoles.includes(session.user.role)) {
+        if (!allowedRoles.includes(session?.user?.role)) {
             return NextResponse.json({ error: "Sin permisos" }, { status: 403 })
         }
 

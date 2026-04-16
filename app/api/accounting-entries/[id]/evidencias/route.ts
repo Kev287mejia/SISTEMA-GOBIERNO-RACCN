@@ -38,7 +38,7 @@ export async function POST(
             Role.ResponsableContabilidad,
         ]
 
-        if (!allowedRoles.includes(session.user.role as Role)) {
+        if (!allowedRoles.includes(session?.user?.role as Role)) {
             return NextResponse.json(
                 { error: "No tiene permisos para subir evidencias" },
                 { status: 403 }
@@ -171,7 +171,7 @@ export async function DELETE(
             Role.ResponsableContabilidad,
         ]
 
-        if (!allowedRoles.includes(session.user.role as Role)) {
+        if (!allowedRoles.includes(session?.user?.role as Role)) {
             return NextResponse.json(
                 { error: "No tiene permisos para eliminar evidencias" },
                 { status: 403 }

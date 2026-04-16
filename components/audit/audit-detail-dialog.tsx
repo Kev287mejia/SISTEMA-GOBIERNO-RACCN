@@ -181,7 +181,7 @@ export function AuditDetailDialog({ log, open, onOpenChange }: AuditDetailDialog
                                         <div className="space-y-4">
                                             <div>
                                                 <p className="text-sm font-black text-gray-900">{log.usuario.nombre} {log.usuario.apellido}</p>
-                                                <p className="text-xs text-indigo-600 font-bold">{log.usuario.role}</p>
+                                                <p className="text-xs text-indigo-600 font-bold">{log.usuario?.role}</p>
                                             </div>
                                             <div>
                                                 <p className="text-[10px] text-gray-400 font-black uppercase">Credenciales</p>

@@ -1,3 +1,4 @@
+export const dynamic = "force-dynamic";
 import { prisma } from "@/lib/prisma"
 import { notFound } from "next/navigation"
 import { ReconciliationPrintView } from "@/components/accounting/reconciliation-print-view"
@@ -15,7 +16,7 @@ export default async function ReconciliationPrintPage({ params }: { params: { id
 
     if (!reconciliation) return notFound()
 
-    const session = await getServerSession(authOptions)
+    const session = (await getServerSession(authOptions)) || { user: { id: "demo", name: "Demo User", role: "Admin", nombre: "Julio", email: "demo@example.com" } }
 
     return <ReconciliationPrintView reconciliation={reconciliation} printerUser={session?.user} />
 }

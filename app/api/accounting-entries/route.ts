@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
 
     const validatedQuery = listAccountingEntriesSchema.parse(query)
 
-    const canSeeDeleted = session.user.role === "Admin" || session.user.role === "Auditor"
+    const canSeeDeleted = session?.user?.role === "Admin" || session?.user?.role === "Auditor"
     const includeDeleted = searchParams.get("includeDeleted") === "true" && canSeeDeleted
 
     const where: any = {
@@ -159,7 +159,7 @@ export async function POST(request: NextRequest) {
     const session = await getServerSession(authOptions)
 
     const forbiddenRoles = ["CoordinadorGobierno", "DirectoraDAF"]
-    if (!session?.user || forbiddenRoles.includes(session.user.role)) {
+    if (!session?.user || forbiddenRoles.includes(session?.user?.role)) {
       return NextResponse.json(
         { error: "No tiene permisos para realizar esta acción" },
         { status: 403 }
