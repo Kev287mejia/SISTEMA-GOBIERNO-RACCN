@@ -1,5 +1,7 @@
 "use client"
 
+export const dynamic = "force-dynamic"
+
 import { useEffect, useState } from "react"
 import { DashboardLayout } from "@/components/layout/dashboard-layout"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -24,8 +26,9 @@ import { CreateEntityDialog } from "@/components/entities/create-entity-dialog"
 import Link from "next/link"
 
 import { useSearchParams } from "next/navigation"
+import { Suspense } from "react"
 
-export default function EntidadesPage() {
+function EntidadesContent() {
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const [entidades, setEntidades] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -275,6 +278,18 @@ export default function EntidadesPage() {
         onSuccess={fetchEntidades}
       />
     </DashboardLayout>
+  )
+}
+
+export default function EntidadesPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="h-12 w-12 animate-spin border-4 border-blue-600 border-t-transparent rounded-full shadow-lg" />
+      </div>
+    }>
+      <EntidadesContent />
+    </Suspense>
   )
 }
 
