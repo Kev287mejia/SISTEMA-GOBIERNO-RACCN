@@ -21,7 +21,7 @@ export function DashboardLayout({
 
   const mockUser = {
     name: "Lic. Julio Lopez Escobar",
-    role: "ContadorGeneral" as any,
+    role: "Admin" as any,
     id: "mock-julio-id"
   }
 

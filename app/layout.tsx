@@ -12,25 +12,22 @@ export const metadata: Metadata = {
   description: "Sistema de gestión contable para instituciones gubernamentales",
 };
 
+import { BuildSafeWrapper } from "@/components/providers/build-safe-wrapper";
+
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  // Build phase safety check
-  const isBuild = process.env.NODE_ENV === 'production' && typeof window === 'undefined';
-
   return (
     <html lang="es" suppressHydrationWarning>
       <body className={inter.className}>
         <ThemeProvider>
           <SessionProvider>
             <NotificationProvider>
-              {isBuild ? (
-                <main id="build-content-placeholder" />
-              ) : (
-                children
-              )}
+              <BuildSafeWrapper>
+                {children}
+              </BuildSafeWrapper>
             </NotificationProvider>
           </SessionProvider>
         </ThemeProvider>
