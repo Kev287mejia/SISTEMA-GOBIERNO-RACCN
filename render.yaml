@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: sistema-gobierno
+    env: docker
+    plan: starter
+    region: ohio
+    healthCheckPath: /api/auth/session
+    envVars:
+      - key: DATABASE_URL
+        sync: false # User must provide this in Render dashboard
+      - key: NEXTAUTH_SECRET
+        generateValue: true
+      - key: NEXTAUTH_URL
+        fromService:
+          name: sistema-gobierno
+          type: web
+          property: host
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
+    # Add any other variables from .env if needed

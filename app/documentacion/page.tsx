@@ -42,18 +42,18 @@ import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
 
 const modules = [
-    { id: "inicio-rapido", name: "Guía Paso a Paso", icon: Sparkles, color: "text-amber-500", bg: "bg-amber-50" },
-    { id: "dashboard", name: "Dashboard", icon: LayoutDashboard, color: "text-blue-500", bg: "bg-blue-50" },
+    { id: "inicio-rapido", name: "Guía Paso a Paso", icon: Sparkles, color: "text-[#FDB913]", bg: "bg-amber-50" },
+    { id: "dashboard", name: "Dashboard", icon: LayoutDashboard, color: "text-[#005C9E]", bg: "bg-blue-50" },
     { id: "contabilidad", name: "Contabilidad", icon: FileText, color: "text-indigo-500", bg: "bg-indigo-50" },
-    { id: "bancos", name: "Bancos", icon: Landmark, color: "text-emerald-500", bg: "bg-emerald-50" },
-    { id: "caja", name: "Caja", icon: Wallet, color: "text-amber-500", bg: "bg-amber-50" },
+    { id: "bancos", name: "Bancos", icon: Landmark, color: "text-[#4D8C2B]", bg: "bg-emerald-50" },
+    { id: "caja", name: "Caja", icon: Wallet, color: "text-[#FDB913]", bg: "bg-amber-50" },
     { id: "caja-chica", name: "Caja Chica", icon: Wallet, color: "text-orange-500", bg: "bg-orange-50" },
     { id: "facturas", name: "Facturas", icon: Receipt, color: "text-rose-500", bg: "bg-rose-50" },
     { id: "presupuesto", name: "Presupuesto", icon: TrendingUp, color: "text-cyan-500", bg: "bg-cyan-50" },
     { id: "inventario", name: "Inventario", icon: Package, color: "text-slate-500", bg: "bg-slate-50" },
     { id: "rrhh", name: "RRHH", icon: Briefcase, color: "text-purple-500", bg: "bg-purple-50" },
     { id: "auditoria", name: "Auditoría", icon: ClipboardList, color: "text-red-500", bg: "bg-red-50" },
-    { id: "reportes", name: "Reportes", icon: BarChart3, color: "text-blue-600", bg: "bg-blue-50" },
+    { id: "reportes", name: "Reportes", icon: BarChart3, color: "text-[#005C9E]", bg: "bg-blue-50" },
     { id: "entidades", name: "Entidades", icon: Building2, color: "text-slate-900", bg: "bg-slate-100" },
     { id: "usuarios", name: "Usuarios", icon: Users, color: "text-violet-500", bg: "bg-violet-50" },
     { id: "configuracion", name: "Configuración", icon: Settings, color: "text-slate-400", bg: "bg-slate-100" },
@@ -66,37 +66,37 @@ export default function DocumentacionPage() {
         <DashboardLayout>
             <div className="space-y-10 max-w-7xl mx-auto pb-20">
                 {/* Modern Hero Header */}
-                <div className="relative overflow-hidden rounded-[3rem] bg-slate-900 p-12 text-white shadow-2xl border border-white/5">
+                <div className="relative overflow-hidden rounded-[3rem] bg-[#005C9E] p-12 text-white shadow-2xl border border-white/10">
                     <div className="absolute top-0 right-0 p-12 opacity-10 pointer-events-none">
-                        <BookOpen className="h-64 w-64 rotate-12" />
+                        <BookOpen className="h-64 w-64 rotate-12 grayscale brightness-0 invert" />
                     </div>
                     <div className="relative z-10 grid md:grid-cols-2 gap-8 items-center">
                         <div className="space-y-6">
-                            <Badge variant="outline" className="border-blue-400/30 text-blue-400 uppercase tracking-[0.3em] font-black bg-blue-400/10 px-4 py-1.5 rounded-full text-[10px]">
-                                Manual de Implementación
+                            <Badge variant="outline" className="border-white/30 text-white uppercase tracking-[0.3em] font-black bg-white/10 px-4 py-1.5 rounded-full text-[10px]">
+                                Manual de Implementación GRACCS
                             </Badge>
                             <h1 className="text-6xl font-black tracking-tighter leading-[1.1]">
                                 Ruta del <br />
-                                <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-orange-400 italic">Especialista</span>
+                                <span className="text-[#FDB913] italic font-impact tracking-normal">Especialista</span>
                             </h1>
-                            <p className="text-slate-400 text-lg font-medium leading-relaxed max-w-md">
-                                Guía secuencial para dominar el sistema, desde la configuración base hasta las operaciones avanzadas de auditoría.
+                            <p className="text-white/70 text-lg font-medium leading-relaxed max-w-md">
+                                Guía secuencial para dominar el sistema regional, desde la configuración base hasta las operaciones avanzadas de auditoría gubernamental.
                             </p>
                             <div className="flex gap-4">
                                 <Button
                                     onClick={() => setActiveTab("inicio-rapido")}
-                                    className="bg-amber-500 hover:bg-amber-600 text-slate-900 h-12 px-8 rounded-2xl font-black uppercase tracking-widest text-[10px]"
+                                    className="bg-[#FDB913] hover:bg-[#FDB913]/90 text-[#005C9E] h-14 px-10 rounded-2xl font-black uppercase tracking-widest text-[10px] shadow-xl shadow-black/20"
                                 >
                                     Iniciar Guía Paso a Paso
                                 </Button>
-                                <Button variant="outline" className="border-white/10 bg-white/5 h-12 px-8 rounded-2xl font-black uppercase tracking-widest text-[10px] text-white">Soporte Técnico</Button>
+                                <Button variant="outline" className="border-white/20 bg-white/5 h-14 px-8 rounded-2xl font-black uppercase tracking-widest text-[10px] text-white hover:bg-white/10 transition-all">Soporte Técnico</Button>
                             </div>
                         </div>
                         <div className="hidden md:flex flex-col gap-4">
-                            <div className="p-8 bg-white/5 rounded-[2.5rem] border border-white/10 backdrop-blur-sm relative group overflow-hidden">
-                                <Activity className="h-12 w-12 text-amber-400 mb-4 group-hover:scale-110 transition-transform" />
+                            <div className="p-8 bg-white/10 rounded-[2.5rem] border border-white/10 backdrop-blur-md relative group overflow-hidden">
+                                <Activity className="h-12 w-12 text-[#FDB913] mb-4 group-hover:scale-110 transition-transform" />
                                 <h4 className="text-xl font-black italic">100% Operativo</h4>
-                                <p className="text-slate-500 text-xs mt-2 uppercase font-black tracking-widest">Sincronización Regional Activa</p>
+                                <p className="text-white/50 text-xs mt-2 uppercase font-black tracking-widest">Sincronización Regional Activa</p>
                             </div>
                         </div>
                     </div>

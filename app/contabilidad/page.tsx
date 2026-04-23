@@ -25,7 +25,7 @@ import {
   ArrowDownLeft,
   Calendar,
   ClipboardCheck,
-  Building2,
+  Building,
   FileBarChart,
   Scale,
   CreditCard,
@@ -62,6 +62,8 @@ type AccountingEntry = {
   }
   check?: any
 }
+
+import { ModuleHero } from "@/components/layout/module-hero"
 
 export default function ContabilidadPage() {
   const router = useRouter()
@@ -402,76 +404,45 @@ export default function ContabilidadPage() {
 
   return (
     <DashboardLayout>
-      <div className="space-y-8 max-w-7xl mx-auto">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm relative overflow-hidden group">
-          <div className="absolute top-0 right-0 p-8 opacity-5 pointer-events-none group-hover:scale-110 transition-transform">
-            <Scale className="h-32 w-32 rotate-12" />
-          </div>
-          <div className="relative z-10">
-            <h1 className="text-4xl font-black tracking-tight text-slate-900">Libro Diario <span className="text-indigo-600">General</span></h1>
-            <p className="text-slate-500 mt-2 font-bold text-sm flex items-center gap-2">
-              <Building2 className="h-4 w-4 text-indigo-500" />
-              Gestión de trazabilidad fiscal y control de auditoría activa
-              {error && <span className="text-rose-500 text-[10px] font-black bg-rose-50 px-3 py-1 rounded-full ml-2 border border-rose-100 animate-pulse">{error}</span>}
-            </p>
-          </div>
+      <div className="min-h-screen bg-[#fcfcfc] pb-20">
+        <ModuleHero 
+          title="LIBRO DIARIO GENERAL" 
+          subtitle="GESTIÓN DE TRAZABILIDAD FISCAL Y CONTROL DE AUDITORÍA ACTIVA"
+        />
 
-          <div className="flex flex-wrap items-center gap-3 relative z-10">
-            <div className="flex items-center gap-2 mr-2">
-              {(session?.user?.role === "Admin" || session?.user?.role === "Auditor") && (
-                <Button
-                  variant={showDeleted ? "destructive" : "outline"}
-                  className="rounded-xl h-12 px-4 shadow-sm border-slate-200 hover:bg-slate-50 transition-all"
-                  onClick={() => setShowDeleted(!showDeleted)}
-                >
-                  {showDeleted ? <ArchiveRestore className="h-4 w-4" /> : <ShieldAlert className="h-4 w-4 text-amber-500" />}
-                </Button>
-              )}
-            </div>
-
-            <Separator orientation="vertical" className="h-8 hidden lg:block bg-slate-100" />
-
-            <div className="flex items-center gap-2">
-              <Link href="/contabilidad/reportes">
-                <Button className="gap-2 rounded-xl h-12 px-6 bg-indigo-600 hover:bg-indigo-700 text-white font-black uppercase text-[10px] shadow-lg shadow-indigo-200 transition-all hover:translate-y-[-1px]">
-                  <TrendingUp className="h-4 w-4" /> Inteligencia Financiera (Senior)
-                </Button>
-              </Link>
-
-              {(session?.user?.role === "Admin" || session?.user?.role === "Auditor" || session?.user?.role === "ContadorGeneral") && (
-                <Button
-                  variant="outline"
-                  className="gap-2 rounded-xl h-12 px-6 border-emerald-200 bg-emerald-50/20 text-emerald-700 hover:bg-emerald-50 font-black uppercase text-[10px] transition-all"
-                  onClick={handleExportLedger}
-                  disabled={isExporting}
-                >
-                  {isExporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileOutput className="h-4 w-4" />}
-                  Exportar Mayor
-                </Button>
-              )}
-
-              {(session?.user?.role === "Admin" || session?.user?.role === "Auditor" || session?.user?.role === "ContadorGeneral" || session?.user?.role === "ResponsableContabilidad") && (
-                <Link href="/contabilidad/cierres">
-                  <Button variant="outline" className="gap-2 rounded-xl h-12 px-6 border-rose-100 bg-rose-50/20 text-rose-700 hover:bg-rose-50 font-black uppercase text-[10px] transition-all">
-                    <Lock className="h-4 w-4 text-rose-500" /> Cierres
+        <div className="max-w-7xl mx-auto px-8 -mt-20 relative z-30 space-y-8">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 bg-white/90 backdrop-blur-md p-6 rounded-[2rem] border border-slate-100 shadow-xl relative overflow-hidden group">
+            <div className="relative z-10 flex flex-wrap items-center gap-4">
+               <div className="flex items-center gap-2">
+                  <Link href="/contabilidad/nuevo">
+                    <Button className="bg-indigo-600 hover:bg-indigo-700 gap-2 h-12 px-8 rounded-xl shadow-xl shadow-indigo-100 font-black uppercase text-[10px] transition-all hover:translate-y-[-2px]">
+                      <Plus className="h-5 w-5" /> Nuevo Asiento
+                    </Button>
+                  </Link>
+               </div>
+               
+               <Separator orientation="vertical" className="h-8 hidden lg:block bg-slate-200" />
+               
+               <div className="flex items-center gap-3">
+                  <Link href="/contabilidad/reportes">
+                    <Button variant="outline" className="gap-2 rounded-xl h-12 px-6 border-indigo-100 bg-white text-indigo-700 hover:bg-indigo-50 font-black uppercase text-[10px] transition-all">
+                      <TrendingUp className="h-4 w-4" /> Inteligencia Financiera
+                    </Button>
+                  </Link>
+                  
+                  <Button
+                    variant="outline"
+                    className="gap-2 rounded-xl h-12 px-6 border-emerald-100 bg-white text-emerald-700 hover:bg-emerald-50 font-black uppercase text-[10px] transition-all"
+                    onClick={handleExportLedger}
+                    disabled={isExporting}
+                  >
+                    {isExporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileOutput className="h-4 w-4" />}
+                    Exportar Mayor
                   </Button>
-                </Link>
-              )}
-
-              <Button variant="outline" className="gap-2 rounded-xl h-12 px-6 border-slate-200 bg-white font-black uppercase text-[10px] hover:bg-slate-50 transition-all" onClick={() => setIsReportOpen(true)}>
-                <FileBarChart className="h-4 w-4 text-slate-500" /> Informe General
-              </Button>
+               </div>
             </div>
-
-            <Separator orientation="vertical" className="h-8 hidden lg:block bg-slate-100" />
-
-            <Link href="/contabilidad/nuevo">
-              <Button className="bg-indigo-600 hover:bg-indigo-700 gap-2 h-12 px-8 rounded-xl shadow-xl shadow-indigo-100 font-black uppercase text-[10px] transition-all hover:translate-y-[-2px]">
-                <Plus className="h-5 w-5" /> Nuevo Asiento
-              </Button>
-            </Link>
           </div>
-        </div>
+
 
         {/* Dynamic Stats Section */}
         <div className="grid gap-6 md:grid-cols-4">
@@ -757,7 +728,8 @@ export default function ContabilidadPage() {
             Cancelar
           </Button>
         </div>
-      )}\n\n      <AccountingReportDialog
+      )}
+      <AccountingReportDialog
         open={isReportOpen}
         onOpenChange={setIsReportOpen}
         entries={filteredEntries}
@@ -771,6 +743,7 @@ export default function ContabilidadPage() {
         entryId={selectedEntryId}
         onUpdate={fetchEntries}
       />
+      </div>
     </DashboardLayout>
   )
 }

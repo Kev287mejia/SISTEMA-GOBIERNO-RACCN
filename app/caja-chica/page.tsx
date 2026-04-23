@@ -5,6 +5,8 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { redirect } from "next/navigation"
 
+import { ModuleHero } from "@/components/layout/module-hero"
+
 export default async function CajaChicaPage() {
     const session = (await getServerSession(authOptions)) || { user: { id: "demo", name: "Demo User", role: "Admin", nombre: "Julio", email: "demo@example.com" } }
 
@@ -19,7 +21,17 @@ export default async function CajaChicaPage() {
 
     return (
         <DashboardLayout>
-            <CreditoDashboard />
+            <div className="min-h-screen bg-[#fcfcfc] pb-20">
+                <ModuleHero 
+                    title="MÓDULO DE CAJA CHICA" 
+                    subtitle="GESTIÓN DE FONDO FIJO, REEMBOLSOS Y RENDICIÓN DE CUENTAS"
+                />
+
+                <div className="max-w-7xl mx-auto px-8 -mt-20 relative z-30">
+                    <CreditoDashboard />
+                </div>
+            </div>
         </DashboardLayout>
     )
 }
+

@@ -18,6 +18,10 @@ const config = {
       },
     },
     extend: {
+      fontFamily: {
+        sans: ["Proxima Nova", "Inter", "sans-serif"],
+        impact: ["Impact", "sans-serif"],
+      },
       colors: {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
@@ -51,6 +55,15 @@ const config = {
         card: {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
+        },
+        sisgob: {
+          green: "#009e86",
+          teal: "#9ae2df",
+          blue: "#006f8c",
+          greenLight: "#00a69c",
+          magenta: "#9b2d6a",
+          yellow: "#ffad01",
+          hover: "#a69b97"
         },
       },
       borderRadius: {

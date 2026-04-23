@@ -12,49 +12,95 @@ import { ChecksTable } from "@/components/caja/checks-table"
 import { ClosuresTable } from "@/components/caja/closures-table"
 import { TesoreriaContent } from "@/components/caja/tesoreria-content"
 
+import { ModuleHero } from "@/components/layout/module-hero"
+
 export default function CajaPage() {
     const router = useRouter()
     return (
         <DashboardLayout>
-            <div className="space-y-6">
-                <div className="flex justify-between items-end">
-                    <div>
-                        <h1 className="text-3xl font-black tracking-tight uppercase">Módulo de Caja - GRACCNN</h1>
-                        <p className="text-muted-foreground font-medium uppercase text-xs tracking-widest mt-1">
-                            Gestión integral de efectivo, títulos valores y emisiones de pago
-                        </p>
-                    </div>
+            <div className="min-h-screen bg-[#fcfcfc]">
+                <ModuleHero 
+                    title="MÓDULO DE CAJA" 
+                    subtitle="GESTIÓN INTEGRAL DE EFECTIVO, TÍTULOS VALORES Y EMISIONES DE PAGO"
+                />
+
+                <div className="px-12 py-8 space-y-10">
+
+                    {/* 2. Navigation Tabs (Pills Style) */}
+                    <Tabs defaultValue="dashboard" className="space-y-12">
+                        <div className="flex justify-center -mt-16 relative z-30">
+                            <TabsList className="bg-white/90 backdrop-blur-md p-2 h-auto gap-3 border shadow-xl rounded-[2.5rem]">
+                                <TabsTrigger 
+                                    value="dashboard" 
+                                    className="rounded-[2rem] px-10 py-4 font-bold uppercase text-[11px] tracking-widest transition-all bg-[#8c8c8b] text-white data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#006f8c] data-[state=active]:to-[#00a69c] data-[state=active]:text-white shadow-md hover:shadow-lg hover:opacity-90 active:scale-95"
+                                >
+                                    DASHBOARD
+                                </TabsTrigger>
+                                <TabsTrigger 
+                                    value="movements" 
+                                    className="rounded-[2rem] px-10 py-4 font-bold uppercase text-[11px] tracking-widest transition-all bg-[#8c8c8b] text-white data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#006f8c] data-[state=active]:to-[#00a69c] data-[state=active]:text-white shadow-md hover:shadow-lg hover:opacity-90 active:scale-95"
+                                >
+                                    MOVIMIENTOS
+                                </TabsTrigger>
+                                <TabsTrigger 
+                                    value="checks" 
+                                    className="rounded-[2rem] px-10 py-4 font-bold uppercase text-[11px] tracking-widest transition-all bg-[#8c8c8b] text-white data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#006f8c] data-[state=active]:to-[#00a69c] data-[state=active]:text-white shadow-md hover:shadow-lg hover:opacity-90 active:scale-95"
+                                >
+                                    CHEQUES Y BANCOS
+                                </TabsTrigger>
+                                <TabsTrigger 
+                                    value="tesoreria" 
+                                    className="rounded-[2rem] px-10 py-4 font-bold uppercase text-[11px] tracking-widest transition-all bg-[#8c8c8b] text-white data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#006f8c] data-[state=active]:to-[#00a69c] data-[state=active]:text-white shadow-md hover:shadow-lg hover:opacity-90 active:scale-95"
+                                >
+                                    TESORERÍA Y PAGOS
+                                </TabsTrigger>
+                                <TabsTrigger 
+                                    value="closures" 
+                                    className="rounded-[2rem] px-10 py-4 font-bold uppercase text-[11px] tracking-widest transition-all bg-[#8c8c8b] text-white data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#006f8c] data-[state=active]:to-[#00a69c] data-[state=active]:text-white shadow-md hover:shadow-lg hover:opacity-90 active:scale-95"
+                                >
+                                    CIERRES DE CAJA
+                                </TabsTrigger>
+                            </TabsList>
+                        </div>
+
+                        <TabsContent value="dashboard" className="space-y-4 outline-none">
+                            <CajaDashboard />
+                        </TabsContent>
+
+
+                        <TabsContent value="movements" className="outline-none">
+                            <Card className="rounded-[2.5rem] border-slate-100 shadow-2xl">
+                                <CardContent className="p-8">
+                                    <MovementsTable />
+                                </CardContent>
+                            </Card>
+                        </TabsContent>
+
+                        <TabsContent value="checks" className="outline-none">
+                            <Card className="rounded-[2.5rem] border-slate-100 shadow-2xl">
+                                <CardContent className="p-8">
+                                    <ChecksTable />
+                                </CardContent>
+                            </Card>
+                        </TabsContent>
+
+                        <TabsContent value="tesoreria" className="outline-none">
+                            <Card className="rounded-[2.5rem] border-slate-100 shadow-2xl">
+                                <CardContent className="p-8">
+                                    <TesoreriaContent />
+                                </CardContent>
+                            </Card>
+                        </TabsContent>
+
+                        <TabsContent value="closures" className="outline-none">
+                            <Card className="rounded-[2.5rem] border-slate-100 shadow-2xl">
+                                <CardContent className="p-8">
+                                    <ClosuresTable />
+                                </CardContent>
+                            </Card>
+                        </TabsContent>
+                    </Tabs>
                 </div>
-
-                <Tabs defaultValue="dashboard" className="space-y-6">
-                    <TabsList className="bg-slate-100 p-1 rounded-2xl h-12 gap-2">
-                        <TabsTrigger value="dashboard" className="rounded-xl px-6 font-black uppercase text-[10px] data-[state=active]:bg-white data-[state=active]:shadow-sm">Dashboard</TabsTrigger>
-                        <TabsTrigger value="movements" className="rounded-xl px-6 font-black uppercase text-[10px] data-[state=active]:bg-white data-[state=active]:shadow-sm">Movimientos</TabsTrigger>
-                        <TabsTrigger value="checks" className="rounded-xl px-6 font-black uppercase text-[10px] data-[state=active]:bg-white data-[state=active]:shadow-sm">Cheques y Bancos</TabsTrigger>
-                        <TabsTrigger value="tesoreria" className="rounded-xl px-6 font-black uppercase text-[10px] data-[state=active]:bg-white data-[state=active]:shadow-sm text-indigo-600">Tesorería y Pagos</TabsTrigger>
-                        <TabsTrigger value="closures" className="rounded-xl px-6 font-black uppercase text-[10px] data-[state=active]:bg-white data-[state=active]:shadow-sm">Cierres de Caja</TabsTrigger>
-                    </TabsList>
-
-                    <TabsContent value="dashboard" className="space-y-4">
-                        <CajaDashboard />
-                    </TabsContent>
-
-                    <TabsContent value="movements">
-                        <MovementsTable />
-                    </TabsContent>
-
-                    <TabsContent value="checks">
-                        <ChecksTable />
-                    </TabsContent>
-
-                    <TabsContent value="tesoreria">
-                        <TesoreriaContent />
-                    </TabsContent>
-
-                    <TabsContent value="closures">
-                        <ClosuresTable />
-                    </TabsContent>
-                </Tabs>
             </div>
         </DashboardLayout>
     )

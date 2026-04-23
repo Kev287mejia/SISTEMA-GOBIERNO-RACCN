@@ -134,31 +134,25 @@ export async function PATCH(
             updateData.paidById = userId
             updateData.paidAt = now
 
-            // LOCK MONETARY FIELDS & AUTO-LEDGER
-            const bankAccount = await prisma.bankAccount.findUnique({
-                where: { accountNumber: check.cuentaBancaria }
-            })
-
-            if (bankAccount) {
-                // Register in Bank Auxiliary Ledger automatically
-                await prisma.bankTransaction.create({
-                    data: {
-                        type: "WITHDRAWAL",
-                        amount: check.monto,
-                        description: `Pago Institucional - Cheque #${check.numero} a favor de ${check.beneficiario}`,
-                        reference: check.numero,
-                        bankAccountId: bankAccount.id,
-                        createdBy: userId,
-                        date: now
-                    }
-                })
-
-                // Instant Balance Update
-                await prisma.bankAccount.update({
-                    where: { id: bankAccount.id },
-                    data: { currentBalance: { decrement: check.monto } }
-                })
+            // --- BLINDAJE ATÓMICO (OPCIÓN B) ---
+            // En lugar de hacer múltiples updates en Prisma, usamos nuestra función blindada en SQL
+            // que garantiza que el descuento de dinero y el registro bancario ocurran o no ocurran juntos.
+            
+            try {
+                await prisma.$executeRaw`SELECT public.process_institutional_check_payment(${params.id}, ${userId})`;
+                
+                // Refrescamos los datos para la respuesta (opcional pero recomendado)
+                updateData.paidById = userId
+                updateData.paidAt = now
+                updateData.estado = "CHEQUE_PAID"
+            } catch (sqlError: any) {
+                console.error("CRITICAL SQL ERROR IN PAYMENT:", sqlError);
+                return new NextResponse(
+                    sqlError.message || "Error Crítico: El motor de pagos de la base de datos rechazó la transacción.", 
+                    { status: 400 }
+                );
             }
+            // ------------------------------------
         }
 
         // 5. ACCOUNTING REGISTRATION & CODIFICATION (Accounting)

@@ -1,4 +1,4 @@
-import { prisma } from './prisma'
+import { supabase } from './supabase'
 
 export interface SuspiciousActivity {
     type: 'MULTIPLE_FAILED_LOGINS' | 'ACCOUNT_LOCKED' | 'UNUSUAL_LOCATION' | 'MULTIPLE_SESSIONS' | 'PERMISSION_ESCALATION' | 'BULK_OPERATIONS'
@@ -12,48 +12,38 @@ export interface SuspiciousActivity {
  * Detecta y registra actividades sospechosas
  */
 export async function detectSuspiciousActivity(activity: SuspiciousActivity): Promise<void> {
-    // Registrar en auditoría
-    await prisma.auditLog.create({
-        data: {
-            accion: 'CREATE',
-            entidad: 'SecurityAlert',
-            entidadId: activity.userId,
-            descripcion: `[${activity.severity}] ${activity.type}: ${activity.description}`,
-            usuarioId: activity.userId,
-            datosNuevos: {
-                type: activity.type,
-                severity: activity.severity,
-                metadata: activity.metadata
-            }
+    await supabase.from('audit_logs').insert({
+        accion: 'CREATE',
+        entidad: 'SecurityAlert',
+        entidadId: activity.userId,
+        descripcion: `[${activity.severity}] ${activity.type}: ${activity.description}`,
+        usuarioId: activity.userId,
+        datosNuevos: {
+            type: activity.type,
+            severity: activity.severity,
+            metadata: activity.metadata
         }
     })
 
-    // Si es crítico, enviar notificación inmediata
     if (activity.severity === 'CRITICAL' || activity.severity === 'HIGH') {
         await sendSecurityAlert(activity)
     }
 }
 
-/**
- * Envía alerta de seguridad a administradores
- */
 async function sendSecurityAlert(activity: SuspiciousActivity): Promise<void> {
-    // Obtener usuario
-    const user = await prisma.user.findUnique({
-        where: { id: activity.userId },
-        select: { email: true, nombre: true, apellido: true, role: true }
-    })
+    const { data: user } = await supabase
+        .from('users')
+        .select('email, nombre, apellido, role')
+        .eq('id', activity.userId)
+        .single()
 
     if (!user) return
 
-    // Obtener administradores
-    const admins = await prisma.user.findMany({
-        where: {
-            role: { in: ['Admin', 'ContadorGeneral'] },
-            activo: true
-        },
-        select: { email: true }
-    })
+    const { data: admins } = await supabase
+        .from('users')
+        .select('email')
+        .in('role', ['Admin', 'ContadorGeneral'])
+        .eq('activo', true)
 
     const alertMessage = `
 🚨 ALERTA DE SEGURIDAD - ${activity.severity}
@@ -71,18 +61,8 @@ Sistema de Contabilidad GRACCNN
   `.trim()
 
     console.log('🚨 ALERTA DE SEGURIDAD:', alertMessage)
-
-    // TODO: Integrar con servicio de email
-    // await sendEmail({
-    //   to: admins.map(a => a.email),
-    //   subject: `[SEGURIDAD ${activity.severity}] ${activity.type}`,
-    //   body: alertMessage
-    // })
 }
 
-/**
- * Monitorea intentos de login fallidos
- */
 export async function monitorFailedLogins(userId: string, attempts: number): Promise<void> {
     if (attempts >= 3) {
         await detectSuspiciousActivity({
@@ -95,9 +75,6 @@ export async function monitorFailedLogins(userId: string, attempts: number): Pro
     }
 }
 
-/**
- * Monitorea bloqueos de cuenta
- */
 export async function monitorAccountLock(userId: string, duration: number): Promise<void> {
     await detectSuspiciousActivity({
         type: 'ACCOUNT_LOCKED',
@@ -108,9 +85,6 @@ export async function monitorAccountLock(userId: string, duration: number): Prom
     })
 }
 
-/**
- * Monitorea operaciones en masa
- */
 export async function monitorBulkOperations(
     userId: string,
     operation: string,
@@ -128,9 +102,6 @@ export async function monitorBulkOperations(
     }
 }
 
-/**
- * Monitorea cambios de permisos
- */
 export async function monitorPermissionChange(
     userId: string,
     targetUserId: string,
@@ -150,54 +121,39 @@ export async function monitorPermissionChange(
     }
 }
 
-/**
- * Obtiene alertas recientes
- */
 export async function getRecentAlerts(hours: number = 24): Promise<any[]> {
-    const since = new Date(Date.now() - hours * 60 * 60 * 1000)
+    const since = new Date(Date.now() - hours * 60 * 60 * 1000).toISOString()
 
-    return await prisma.auditLog.findMany({
-        where: {
-            entidad: 'SecurityAlert',
-            fecha: { gte: since }
-        },
-        orderBy: { fecha: 'desc' },
-        take: 100,
-        include: {
-            usuario: {
-                select: {
-                    email: true,
-                    nombre: true,
-                    apellido: true,
-                    role: true
-                }
-            }
-        }
-    })
+    const { data } = await supabase
+        .from('audit_logs')
+        .select(`
+            *,
+            users:usuarioId (
+                email,
+                nombre,
+                apellido,
+                role
+            )
+        `)
+        .eq('entidad', 'SecurityAlert')
+        .gte('fecha', since)
+        .order('fecha', { ascending: false })
+        .limit(100)
+
+    return data || []
 }
 
-/**
- * Obtiene estadísticas de seguridad
- */
-export async function getSecurityStats(days: number = 7): Promise<{
-    totalAlerts: number
-    criticalAlerts: number
-    highAlerts: number
-    failedLogins: number
-    lockedAccounts: number
-    alertsByType: Record<string, number>
-}> {
-    const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000)
+export async function getSecurityStats(days: number = 7): Promise<any> {
+    const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString()
 
-    const alerts = await prisma.auditLog.findMany({
-        where: {
-            entidad: 'SecurityAlert',
-            fecha: { gte: since }
-        }
-    })
+    const { data: alerts } = await supabase
+        .from('audit_logs')
+        .select('*')
+        .eq('entidad', 'SecurityAlert')
+        .gte('fecha', since)
 
     const stats = {
-        totalAlerts: alerts.length,
+        totalAlerts: alerts?.length || 0,
         criticalAlerts: 0,
         highAlerts: 0,
         failedLogins: 0,
@@ -205,15 +161,12 @@ export async function getSecurityStats(days: number = 7): Promise<{
         alertsByType: {} as Record<string, number>
     }
 
-    alerts.forEach(alert => {
+    alerts?.forEach(alert => {
         const data = alert.datosNuevos as any
-
         if (data.severity === 'CRITICAL') stats.criticalAlerts++
         if (data.severity === 'HIGH') stats.highAlerts++
-
         if (data.type === 'MULTIPLE_FAILED_LOGINS') stats.failedLogins++
         if (data.type === 'ACCOUNT_LOCKED') stats.lockedAccounts++
-
         stats.alertsByType[data.type] = (stats.alertsByType[data.type] || 0) + 1
     })
 

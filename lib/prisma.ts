@@ -1,28 +1,24 @@
-// MOCK PRISMA CLIENT FOR DEMO MODE
-// This prevents the application from crashing when no database is available.
+import { PrismaClient } from "@prisma/client";
 
-const mockModel = {
-  findMany: async () => [],
-  findUnique: async () => null,
-  findFirst: async () => null,
-  count: async () => 0,
-  create: async ({ data }: any) => ({ id: "mock-id", ...data }),
-  update: async ({ data }: any) => ({ id: "mock-id", ...data }),
-  delete: async () => ({ id: "mock-id" }),
-  upsert: async ({ create }: any) => ({ id: "mock-id", ...create }),
-  aggregate: async () => ({ _sum: {}, _avg: {}, _count: 0 }),
-  groupBy: async () => [],
+const prismaClientSingleton = () => {
+  // Durante el build, a veces la URL no está disponible. 
+  // Pasamos una URL de respaldo para que Prisma no detenga la compilación.
+  const dbUrl = process.env.DATABASE_URL || "postgresql://postgres:postgres@localhost:5432/postgres";
+  
+  return new PrismaClient({
+    // Usamos el formato que Prisma 7 espera cuando no hay config externa
+    datasources: {
+      db: {
+        url: dbUrl
+      }
+    }
+  });
 };
 
-const proxy: any = new Proxy({}, {
-  get: (target, prop) => {
-    if (prop === "$connect" || prop === "$disconnect") return async () => {};
-    if (prop === "$transaction") return async (fn: any) => {
-        if (typeof fn === 'function') return fn(proxy);
-        return fn;
-    };
-    return mockModel;
-  }
-});
+declare global {
+  var prisma: undefined | ReturnType<typeof prismaClientSingleton>;
+}
 
-export const prisma = proxy;
+export const prisma = global.prisma ?? prismaClientSingleton();
+
+if (process.env.NODE_ENV !== "production") global.prisma = prisma;

@@ -1,1 +1,4 @@
-{"name": "sistema-gobierno-demo"}
+{
+  "framework": "nextjs",
+  "regions": ["iad1"]
+}

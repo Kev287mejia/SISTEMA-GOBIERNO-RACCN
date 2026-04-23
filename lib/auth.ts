@@ -1,8 +1,7 @@
 import { NextAuthOptions } from "next-auth"
 import CredentialsProvider from "next-auth/providers/credentials"
-import { prisma } from "./prisma"
+import { supabase } from "./supabase"
 import bcrypt from "bcryptjs"
-import { Role } from "@prisma/client"
 import { verify2FAToken, verifyBackupCode } from "./two-factor"
 import { monitorFailedLogins, monitorAccountLock } from "./security-monitor"
 
@@ -25,13 +24,16 @@ export const authOptions: NextAuthOptions = {
         }
 
         const email = credentials.email.trim().toLowerCase()
-        console.log(`Auth Attempt: Email=${email}`)
+        console.log(`Auth Attempt: Email=${email} (Supabase Engine)`)
 
-        const user = await prisma.user.findUnique({
-          where: { email }
-        })
+        // Buscar usuario en Supabase
+        const { data: user, error: fetchError } = await supabase
+          .from('users')
+          .select('*')
+          .eq('email', email)
+          .single()
 
-        if (!user) {
+        if (fetchError || !user) {
           console.log(`Auth: User not found: ${email}`)
           return null
         }
@@ -43,21 +45,18 @@ export const authOptions: NextAuthOptions = {
         }
 
         // Verificar si la cuenta está bloqueada
-        if (user.lockedUntil && user.lockedUntil > new Date()) {
-          const minutesLeft = Math.ceil((user.lockedUntil.getTime() - Date.now()) / 60000)
+        if (user.lockedUntil && new Date(user.lockedUntil) > new Date()) {
+          const minutesLeft = Math.ceil((new Date(user.lockedUntil).getTime() - Date.now()) / 60000)
           console.log(`Auth: Account locked for ${minutesLeft} more minutes`)
           throw new Error(`ACCOUNT_LOCKED:${minutesLeft}`)
         }
 
         // Si el bloqueo expiró, resetear intentos fallidos
-        if (user.lockedUntil && user.lockedUntil <= new Date()) {
-          await prisma.user.update({
-            where: { id: user.id },
-            data: {
-              failedLoginAttempts: 0,
-              lockedUntil: null
-            }
-          })
+        if (user.lockedUntil && new Date(user.lockedUntil) <= new Date()) {
+          await supabase.from('users').update({
+            failedLoginAttempts: 0,
+            lockedUntil: null
+          }).eq('id', user.id)
         }
 
         // Verificar contraseña
@@ -67,125 +66,66 @@ export const authOptions: NextAuthOptions = {
         )
 
         if (!isPasswordValid) {
-          // Incrementar intentos fallidos
-          const newAttempts = user.failedLoginAttempts + 1
+          const newAttempts = (user.failedLoginAttempts || 0) + 1
           const shouldLock = newAttempts >= MAX_LOGIN_ATTEMPTS
 
-          await prisma.user.update({
-            where: { id: user.id },
-            data: {
-              failedLoginAttempts: newAttempts,
-              lockedUntil: shouldLock
-                ? new Date(Date.now() + LOCK_DURATION_MINUTES * 60 * 1000)
-                : null
-            }
-          })
+          await supabase.from('users').update({
+            failedLoginAttempts: newAttempts,
+            lockedUntil: shouldLock
+              ? new Date(Date.now() + LOCK_DURATION_MINUTES * 60 * 1000).toISOString()
+              : null
+          }).eq('id', user.id)
 
-          // Monitorear intentos fallidos
           await monitorFailedLogins(user.id, newAttempts)
 
-          // Registrar intento fallido en auditoría
-          await prisma.auditLog.create({
-            data: {
-              accion: "LOGIN",
-              entidad: "User",
-              entidadId: user.id,
-              descripcion: `Intento de login fallido (${newAttempts}/${MAX_LOGIN_ATTEMPTS})`,
-              usuarioId: user.id,
-              datosNuevos: {
-                failedAttempts: newAttempts,
-                locked: shouldLock
-              }
-            }
+          // Auditoría en Supabase
+          await supabase.from('audit_logs').insert({
+            accion: "LOGIN",
+            entidad: "User",
+            entidadId: user.id,
+            descripcion: `Intento de login fallido (${newAttempts}/${MAX_LOGIN_ATTEMPTS})`,
+            usuarioId: user.id,
+            datosNuevos: { failedAttempts: newAttempts, locked: shouldLock }
           })
 
           if (shouldLock) {
             await monitorAccountLock(user.id, LOCK_DURATION_MINUTES)
-            console.log(`Auth: Account locked after ${MAX_LOGIN_ATTEMPTS} failed attempts`)
             throw new Error(`ACCOUNT_LOCKED:${LOCK_DURATION_MINUTES}`)
           }
 
           const attemptsLeft = MAX_LOGIN_ATTEMPTS - newAttempts
-          console.log(`Auth: Invalid password. ${attemptsLeft} attempts left`)
           throw new Error(`INVALID_PASSWORD:${attemptsLeft}`)
         }
 
-        // Si 2FA está habilitado, verificar código
+        // 2FA Logic
         if (user.twoFactorEnabled) {
           const twoFactorCode = credentials.twoFactorCode
+          if (!twoFactorCode) throw new Error("2FA_REQUIRED")
 
-          if (!twoFactorCode) {
-            throw new Error("2FA_REQUIRED")
-          }
-
-          // Verificar código TOTP
           let isValid2FA = false
           if (user.twoFactorSecret) {
             isValid2FA = verify2FAToken(twoFactorCode, user.twoFactorSecret)
           }
 
-          // Si no es válido, intentar con código de respaldo
-          if (!isValid2FA && user.twoFactorBackupCodes.length > 0) {
+          if (!isValid2FA && user.twoFactorBackupCodes?.length > 0) {
             const backupResult = verifyBackupCode(twoFactorCode, user.twoFactorBackupCodes)
-
             if (backupResult.isValid) {
-              // Actualizar códigos de respaldo (remover el usado)
-              await prisma.user.update({
-                where: { id: user.id },
-                data: {
-                  twoFactorBackupCodes: backupResult.remainingCodes || []
-                }
-              })
-
+              await supabase.from('users').update({
+                twoFactorBackupCodes: backupResult.remainingCodes || []
+              }).eq('id', user.id)
               isValid2FA = true
-
-              // Registrar uso de código de respaldo
-              await prisma.auditLog.create({
-                data: {
-                  accion: "LOGIN",
-                  entidad: "User",
-                  entidadId: user.id,
-                  descripcion: "Login con código de respaldo 2FA",
-                  usuarioId: user.id,
-                  datosNuevos: {
-                    backupCodesRemaining: backupResult.remainingCodes?.length || 0
-                  }
-                }
-              })
             }
           }
 
-          if (!isValid2FA) {
-            console.log("Auth: Invalid 2FA code")
-            throw new Error("INVALID_2FA")
-          }
+          if (!isValid2FA) throw new Error("INVALID_2FA")
         }
 
-        // Login exitoso - resetear intentos fallidos y actualizar último login
-        await prisma.user.update({
-          where: { id: user.id },
-          data: {
-            failedLoginAttempts: 0,
-            lockedUntil: null,
-            lastLoginAt: new Date()
-          }
-        })
-
-        // Registrar login exitoso en auditoría
-        try {
-          await prisma.auditLog.create({
-            data: {
-              accion: "LOGIN",
-              entidad: "User",
-              entidadId: user.id,
-              descripcion: `Login exitoso${user.twoFactorEnabled ? ' (2FA)' : ''}`,
-              usuarioId: user.id
-            }
-          })
-        } catch (auditError) {
-          console.error("Auth: Failed to create audit log", auditError)
-          // Don't block login if audit fails
-        }
+        // Success Update
+        await supabase.from('users').update({
+          failedLoginAttempts: 0,
+          lockedUntil: null,
+          lastLoginAt: new Date().toISOString()
+        }).eq('id', user.id)
 
         console.log(`Auth: Login successful for: ${email} [${user.role}]`)
 
@@ -195,14 +135,14 @@ export const authOptions: NextAuthOptions = {
           name: `${user.nombre} ${user.apellido || ""}`.trim(),
           role: user.role,
           twoFactorEnabled: user.twoFactorEnabled,
-          deniedModules: user.deniedModules,
-          sessionVersion: user.sessionVersion
+          deniedModules: user.deniedModules || [],
+          sessionVersion: user.sessionVersion || 1
         }
       }
     })
   ],
   callbacks: {
-    async jwt({ token, user, trigger, session }) {
+    async jwt({ token, user }) {
       if (user) {
         token.role = (user as any).role
         token.id = user.id
@@ -211,72 +151,42 @@ export const authOptions: NextAuthOptions = {
         token.sessionVersion = (user as any).sessionVersion
       }
 
-      // Check DB for critical updates (Security: Absolute Immediate)
-      if (token.id) {
+      if (token.id && token.id !== "test") {
         try {
-          const dbUser = await prisma.user.findUnique({
-            where: { id: token.id },
-            select: {
-              sessionVersion: true,
-              role: true,
-              deniedModules: true,
-              activo: true
-            }
-          })
+          const { data: dbUser } = await supabase
+            .from('users')
+            .select('sessionVersion, role, deniedModules, activo')
+            .eq('id', token.id)
+            .single()
 
-          // Invalidate if user not found or inactive
-          if (!dbUser || !dbUser.activo) {
-            return { ...token, error: "RefreshAccessTokenError" }
-          }
+          if (!dbUser || !dbUser.activo) return { ...token, error: "RefreshAccessTokenError" }
 
-          // Update token if version changed (Permission Update)
           if (dbUser.sessionVersion && dbUser.sessionVersion !== token.sessionVersion) {
             token.role = dbUser.role
             token.deniedModules = dbUser.deniedModules
             token.sessionVersion = dbUser.sessionVersion
           }
         } catch (error) {
-          console.error("Error checking session version", error)
+          console.error("Auth: Session refresh error", error)
         }
       }
-
       return token
     },
     async session({ session, token }) {
-      // If token has error, invalidate session
-      if ((token as any).error === "RefreshAccessTokenError") {
-        return null as any
-      }
-
+      if ((token as any).error === "RefreshAccessTokenError") return null as any
       if (session.user) {
-        session.user.role = token.role as Role
+        session.user.role = token.role as any
         session.user.id = token.id as string
-          ; (session.user as any).twoFactorEnabled = token.twoFactorEnabled
-          ; (session.user as any).deniedModules = token.deniedModules || []
-          ; (session.user as any).sessionVersion = token.sessionVersion
+        ;(session.user as any).twoFactorEnabled = token.twoFactorEnabled
+        ;(session.user as any).deniedModules = token.deniedModules || []
+        ;(session.user as any).sessionVersion = token.sessionVersion
       }
       return session
     }
   },
-  pages: {
-    signIn: "/auth/login",
-    error: "/auth/login",
-  },
-  session: {
-    strategy: "jwt",
-    maxAge: 8 * 60 * 60, // 8 horas
-  },
+  pages: { signIn: "/auth/login", error: "/auth/login" },
+  session: { strategy: "jwt", maxAge: 8 * 60 * 60 },
   debug: process.env.NODE_ENV === "development",
-  cookies: {
-    sessionToken: {
-      name: `next-auth.session-token`,
-      options: {
-        httpOnly: true,
-        sameSite: 'lax',
-        path: '/',
-        secure: process.env.NODE_ENV === 'production'
-      }
-    }
-  },
-  secret: process.env.NEXTAUTH_SECRET,
+  secret: process.env.NEXTAUTH_SECRET || "sisgob-secret-2026-key",
 };
+

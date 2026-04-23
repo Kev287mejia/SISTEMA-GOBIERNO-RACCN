@@ -2,57 +2,113 @@
 @tailwind components;
 @tailwind utilities;
 
+@font-face {
+  font-family: 'Proxima Nova';
+  src: url('/fonts/ProximaNova-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Proxima Nova';
+  src: url('/fonts/ProximaNova-Semibold.ttf') format('truetype');
+  font-weight: 600;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Proxima Nova';
+  src: url('/fonts/ProximaNova-Bold.ttf') format('truetype');
+  font-weight: 700;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Impact';
+  src: url('/fonts/impact.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+}
+
 @layer base {
   :root {
-    --background: 210 40% 98%;
+    /* GRACCN Brand Colors */
+    --background: 210 50% 98%; /* Soft Ice Blue */
     --foreground: 222 47% 11%;
+    
     --card: 0 0% 100%;
     --card-foreground: 222 47% 11%;
+    
     --popover: 0 0% 100%;
     --popover-foreground: 222 47% 11%;
-    --primary: 221 83% 53%;
+    
+    /* Primary: Deep Blue from GRACCN */
+    --primary: 205 100% 31%;
     --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96%;
+    
+    /* Secondary: Vibrant Orange from SISGOB Logo */
+    --secondary: 42 98% 53%;
     --secondary-foreground: 222 47% 11%;
+    
+    /* Accent: Regional Green or Gold */
+    --accent: 76 65% 45%;
+    --accent-foreground: 210 40% 98%;
+    
     --muted: 210 40% 96%;
     --muted-foreground: 215 16% 47%;
-    --accent: 210 40% 96%;
-    --accent-foreground: 222 47% 11%;
+    
     --destructive: 0 84% 60%;
     --destructive-foreground: 210 40% 98%;
+    
     --border: 214 32% 91%;
     --input: 214 32% 91%;
-    --ring: 221 83% 53%;
-    --radius: 0.75rem;
+    --ring: 205 100% 31%;
+    
+    --radius: 1.5rem;
   }
 
   .dark {
     --background: 222 47% 11%;
     --foreground: 210 40% 98%;
+    
     --card: 222 47% 11%;
     --card-foreground: 210 40% 98%;
+    
     --popover: 222 47% 11%;
     --popover-foreground: 210 40% 98%;
-    --primary: 217 91% 60%;
+    
+    --primary: 205 100% 45%;
     --primary-foreground: 222 47% 11%;
-    --secondary: 217 32% 17%;
-    --secondary-foreground: 210 40% 98%;
+    
+    --secondary: 42 98% 53%;
+    --secondary-foreground: 222 47% 11%;
+    
     --muted: 217 32% 17%;
     --muted-foreground: 215 20% 65%;
+    
     --accent: 217 32% 17%;
     --accent-foreground: 210 40% 98%;
+    
     --destructive: 0 62% 30%;
     --destructive-foreground: 210 40% 98%;
+    
     --border: 217 32% 17%;
     --input: 217 32% 17%;
-    --ring: 224 76% 48%;
+    --ring: 205 100% 45%;
   }
 }
 
-/* Clases utilitarias personalizadas */
 @layer components {
   .glass {
     @apply bg-background/60 backdrop-blur-xl border-border/50;
+  }
+  
+  .brand-gradient {
+    @apply bg-gradient-to-r from-[#005C9E] to-[#003B66];
+  }
+
+  .accent-gradient {
+    @apply bg-gradient-to-r from-[#FDB913] to-[#FF8C00];
   }
 }
 
@@ -62,6 +118,27 @@
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-sans antialiased;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-sans font-bold tracking-tight;
+  }
+  
+  .font-impact {
+    font-family: 'Impact', sans-serif;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 4px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    @apply bg-white/10 rounded-full;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    @apply bg-white/20;
   }
 }

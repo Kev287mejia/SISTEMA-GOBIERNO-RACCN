@@ -16,31 +16,14 @@ export async function middleware(req: NextRequest) {
     return NextResponse.next()
   }
 
-  // 2. Verificar Sesión (DESACTIVADO PARA MODO DEMO)
-  /*
+  // PROTECCIÓN DE RUTAS: Redirigir al login si no hay sesión
   const token = await getToken({ req })
-
-  // Si no hay token, redirigir a login
-  if (!token) {
-    // Si es una llamada API, devolver 401 JSON
-    if (pathname.startsWith("/api/")) {
-      return NextResponse.json({ error: "Authentication required" }, { status: 401 })
-    }
-
-    // Si es pagina, redirigir
-    const url = new URL("/auth/login", req.url)
-    url.searchParams.set("callbackUrl", encodeURI(req.url))
-    return NextResponse.redirect(url)
+  
+  if (!token && !pathname.startsWith("/auth")) {
+    return NextResponse.redirect(new URL("/auth/login", req.url))
   }
-  */
 
-  // 3. Pasar la solicitud
-  const response = NextResponse.next()
-
-  // Añadir cabeceras de seguridad o info de usuario si es necesario
-  // response.headers.set("x-user-role", token.role as string)
-
-  return response
+  return NextResponse.next()
 }
 
 export const config = {
