@@ -2,7 +2,7 @@ services:
   - type: web
     name: sistema-gobierno
     env: docker
-    plan: starter
+    plan: free
     region: ohio
     healthCheckPath: /api/auth/session
     envVars:
